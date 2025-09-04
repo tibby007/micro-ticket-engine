@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Settings, LogOut, Shield, BarChart3 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Settings, LogOut, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SearchWizard } from '../components/SearchWizard';
 import { LeadsPipeline } from '../components/LeadsPipeline';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Building2, MapPin, DollarSign, Zap, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import type { SearchRequest, Subscription } from '../types';
