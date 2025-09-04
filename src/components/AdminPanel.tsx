@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Activity, DollarSign, RefreshCw, AlertTriangle, Server, CreditCard, TrendingUp, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Activity, DollarSign, RefreshCw, AlertTriangle, Server, CreditCard, TrendingUp, Clock, BarChart3 } from 'lucide-react';
 import { api } from '../services/api';
 import type { AdminStats } from '../types';
 

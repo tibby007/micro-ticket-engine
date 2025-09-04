@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Globe, MapPin, Clock, CheckCircle, Search, Building, DollarSign, Users, Target } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mail, Phone, Globe, MapPin, CheckCircle, Search, Building, DollarSign, Users, Target } from 'lucide-react';
 import { api } from '../services/api';
 import type { Lead, LeadJob } from '../types';
 
