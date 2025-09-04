@@ -78,7 +78,7 @@ export function AuthPage() {
                 {isLogin ? 'Welcome Back' : 'Start Your Free Trial'}
               </h2>
               <p className="text-blue-200">
-                {isLogin ? 'Sign in to your account' : '2-day free trial • No credit card required'}
+                {isLogin ? 'Sign in to your account' : '2-day free trial • No charge until trial ends'}
               </p>
             </div>
 
@@ -161,7 +161,7 @@ export function AuthPage() {
             {!isLogin && (
               <div className="mt-6 p-4 bg-green-500/20 border border-green-400/50 rounded-lg">
                 <p className="text-green-200 text-sm text-center">
-                  🎉 2-day free trial includes full access to all features
+                  🎉 2-day free trial • Credit card required but no charge until trial ends
                 </p>
               </div>
             )}

@@ -75,11 +75,11 @@ export function PricingTable() {
           Choose Your Plan
         </h2>
         <p className="text-xl text-gray-600 mb-6">
-          Start with a 2-day free trial. No credit card required.
+          Start with a 2-day free trial. Credit card required, but no charge until trial ends.
         </p>
         <div className="inline-flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-full">
           <Sparkles className="w-4 h-4" />
-          <span className="font-medium">All plans include 2-day free trial</span>
+          <span className="font-medium">2-day free trial • No charge until trial ends</span>
         </div>
       </div>
 
@@ -111,7 +111,7 @@ export function PricingTable() {
                 ${plan.price}
                 <span className="text-lg text-gray-500 font-normal">/month</span>
               </div>
-              <p className="text-green-600 font-medium">2-day free trial included</p>
+              <p className="text-green-600 font-medium">2-day free trial • No charge until trial ends</p>
             </div>
 
             <div className="space-y-6 mb-8">
