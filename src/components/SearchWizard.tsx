@@ -41,6 +41,12 @@ const LEAD_COUNTS = [
   { label: '50 leads', value: 50 },
   { label: '75 leads', value: 75 },
   { label: '100 leads', value: 100 },
+
+const RADIUS_OPTIONS = [
+  { label: '10 miles', value: 10 },
+  { label: '25 miles', value: 25 },
+  { label: '50 miles', value: 50 },
+  { label: '100 miles', value: 100 },
 ];
 
 const RADIUS_OPTIONS = [
@@ -54,6 +60,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState<SearchRequest>({
     industry: '',
     city: '',
@@ -61,7 +68,9 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
     leadCount: 25,
     radius: 25,
     keywords: []
+    keywords: []
   });
+  const [keywordInput, setKeywordInput] = useState('');
   const [keywordInput, setKeywordInput] = useState('');
 
   const canProceed = (step: number): boolean => {
@@ -69,8 +78,24 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
       case 1: return !!formData.industry;
       case 2: return !!formData.city && !!formData.state;
       case 3: return !!formData.leadCount && !!formData.radius;
-      default: return false;
     }
+  };
+
+  const addKeyword = () => {
+    if (keywordInput.trim() && !formData.keywords?.includes(keywordInput.trim())) {
+      setFormData({
+        ...formData,
+        keywords: [...(formData.keywords || []), keywordInput.trim()]
+      });
+      setKeywordInput('');
+    }
+  };
+
+  const removeKeyword = (keyword: string) => {
+    setFormData({
+      ...formData,
+      keywords: formData.keywords?.filter(k => k !== keyword) || []
+    });
   };
 
   const addKeyword = () => {
@@ -101,7 +126,13 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
       return;
     }
 
+    if ((formData.leadCount || 0) > subscription.limits.leadsPerSearch) {
+      setError(`Your ${subscription.tier} plan allows up to ${subscription.limits.leadsPerSearch} leads per search. Please reduce the lead count or upgrade your plan.`);
+      return;
+    }
+
     setIsSubmitting(true);
+    setError('');
     setError('');
     try {
       const { jobId } = await api.startSearch(formData);
@@ -218,6 +249,13 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
                       {count.label}
                     </button>
                   ))}
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {count.label}
+                    </button>
+                  ))}
                 </div>
               </div>
               
@@ -268,24 +306,36 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
                     {formData.keywords.map((keyword, index) => (
                       <span
                         key={index}
-                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center space-x-2"
-                      >
-                        <span>{keyword}</span>
-                        <button
-                          onClick={() => removeKeyword(keyword)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-4 text-left">
+                  Search Radius
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {RADIUS_OPTIONS.map((radius) => (
+                    <button
+                      key={radius.value}
+                      onClick={() => setFormData({ ...formData, radius: radius.value })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        formData.radius === radius.value
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {radius.label}
+                    </button>
+                  ))}
                 )}
               </div>
-            </div>
-          </div>
-        );
-
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-4 text-left">
+                  Keywords (Optional)
+                </label>
+                <div className="flex space-x-2 mb-3">
+                  <input
+                    type="text"
       default:
         return null;
     }
@@ -318,6 +368,13 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
           </div>
         ))}
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (

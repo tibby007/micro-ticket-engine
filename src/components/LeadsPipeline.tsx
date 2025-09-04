@@ -62,6 +62,15 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
       }
       
       await api.updateLead(jobId, leadId, newStatus);
+      const jobId = Object.keys(leads).find(jId => 
+        leads[jId].some(lead => lead.id === leadId)
+      );
+      
+      if (!jobId) {
+        throw new Error('Job ID not found for lead');
+      }
+      
+      await api.updateLead(jobId, leadId, newStatus);
       
       setLeads(prev => {
         const updated = { ...prev };
@@ -74,6 +83,7 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
       });
     } catch (error) {
       console.error('Failed to update lead status:', error);
+      alert('Failed to update lead status. Please try again.');
       alert('Failed to update lead status. Please try again.');
     }
   };
@@ -89,6 +99,8 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
       case 'qualified': return 'bg-green-50 border-green-200 hover:bg-green-100';
       case 'disqualified': return 'bg-red-50 border-red-200 hover:bg-red-100';
       case 'won': return 'bg-purple-50 border-purple-200 hover:bg-purple-100';
+      case 'disqualified': return 'bg-red-50 border-red-200 hover:bg-red-100';
+      case 'won': return 'bg-purple-50 border-purple-200 hover:bg-purple-100';
     }
   };
 
@@ -96,6 +108,8 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
     { id: 'new', title: 'New Leads', status: 'new' as const, icon: Users },
     { id: 'contacted', title: 'Contacted', status: 'contacted' as const, icon: Mail },
     { id: 'qualified', title: 'Qualified', status: 'qualified' as const, icon: CheckCircle },
+    { id: 'disqualified', title: 'Disqualified', status: 'disqualified' as const, icon: Target },
+    { id: 'won', title: 'Won', status: 'won' as const, icon: Building },
     { id: 'disqualified', title: 'Disqualified', status: 'disqualified' as const, icon: Target },
     { id: 'won', title: 'Won', status: 'won' as const, icon: Building },
   ];
@@ -197,6 +211,9 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                     {job.searchParams.keywords && job.searchParams.keywords.length > 0 && (
                       <span> • Keywords: {job.searchParams.keywords.join(', ')}</span>
                     )}
+                    {job.searchParams.keywords && job.searchParams.keywords.length > 0 && (
+                      <span> • Keywords: {job.searchParams.keywords.join(', ')}</span>
+                    )}
                   </p>
                 </div>
                 <span className={`px-4 py-2 rounded-full text-sm font-medium ${
@@ -220,6 +237,12 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                       style={{ width: `${Math.min(job.progress, 100)}%` }}
                     />
                   </div>
+                </div>
+              )}
+              
+              {job.status === 'failed' && job.error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm">{job.error}</p>
                 </div>
               )}
               
@@ -255,6 +278,8 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                       column.status === 'new' ? 'text-blue-500' :
                       column.status === 'contacted' ? 'text-yellow-500' :
                       column.status === 'qualified' ? 'text-green-500' :
+                      column.status === 'disqualified' ? 'text-red-500' :
+                      'text-purple-500'
                       column.status === 'disqualified' ? 'text-red-500' :
                       'text-purple-500'
                     }`} />
@@ -329,6 +354,8 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                             <option value="new">New</option>
                             <option value="contacted">Contacted</option>
                             <option value="qualified">Qualified</option>
+                            <option value="disqualified">Disqualified</option>
+                            <option value="won">Won</option>
                             <option value="disqualified">Disqualified</option>
                             <option value="won">Won</option>
                           </select>
@@ -461,6 +488,13 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                     onClick={() => handleStatusChange(selectedLead.id, 'qualified')}
                     disabled={selectedLead.status === 'qualified'}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Mark Qualified
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(selectedLead.id, 'won')}
+                    disabled={selectedLead.status === 'won'}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Mark Qualified
                   </button>

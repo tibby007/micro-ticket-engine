@@ -1,33 +1,38 @@
 import { useState, useEffect } from 'react';
-import { Plus, Settings, LogOut, Shield } from 'lucide-react';
+import { Plus, Settings, LogOut, Shield, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { AuthPage } from './AuthPage';
 import { SearchWizard } from '../components/SearchWizard';
 import { LeadsPipeline } from '../components/LeadsPipeline';
 import { PricingTable } from '../components/PricingTable';
 import { TrialBanner } from '../components/TrialBanner';
+import { api } from '../services/api';
 
 export function DashboardPage() {
+  const { user, subscription, loading, logout, refreshSubscription } = useAuth();
   const [showWizard, setShowWizard] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
   const [activeJobs, setActiveJobs] = useState<string[]>([]);
-  
-  // Mock subscription for demo
-  const subscription = {
-    active: true,
-    status: 'trialing' as const,
-    trialEndsAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    tier: 'pro' as const,
-    limits: {
-      leadsPerSearch: 50,
-      activeJobs: 3,
-      features: ['Priority scraping', 'Advanced email templates']
-    },
-    usage: {
-      activeJobs: 1,
-      searchesThisMonth: 12
-    },
-    isAdmin: true,
-    customerEmail: 'demo@microtix.com'
-  };
+  const [checkoutMessage, setCheckoutMessage] = useState('');
+
+  // Handle checkout success/cancel messages
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const checkout = urlParams.get('checkout');
+    
+    if (checkout === 'success') {
+      setCheckoutMessage('Payment successful! Your subscription has been activated.');
+      refreshSubscription();
+      // Clear URL parameter
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (checkout === 'cancel') {
+      setCheckoutMessage('Payment was cancelled. You can try again anytime.');
+      // Clear URL parameter
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [refreshSubscription]);
 
   useEffect(() => {
     const savedJobs = localStorage.getItem('microtix_active_jobs');
@@ -45,6 +50,7 @@ export function DashboardPage() {
     const updatedJobs = [...activeJobs, jobId];
     setActiveJobs(updatedJobs);
     localStorage.setItem('microtix_active_jobs', JSON.stringify(updatedJobs));
+    refreshSubscription(); // Refresh to update usage stats
   };
 
   const handleJobUpdate = (jobs: string[]) => {
@@ -53,24 +59,66 @@ export function DashboardPage() {
   };
 
   const handleBillingPortal = async () => {
-    alert('Billing portal would open here');
+    try {
+      const { url } = await api.getPortal();
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Failed to open billing portal:', error);
+      alert('Failed to open billing portal. Please try again.');
+    }
   };
 
-  const logout = () => {
-    alert('Logout would happen here');
-  };
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
-  const refreshSubscription = () => {
-    alert('Subscription refreshed');
-  };
+  if (!user) {
+    return <AuthPage />;
+  }
 
-  const canStartNewSearch = subscription.usage.activeJobs < subscription.limits.activeJobs;
+  if (!subscription) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Subscription Error</h2>
+          <p className="text-gray-600 mb-4">Failed to load subscription information.</p>
+          <button
+            onClick={refreshSubscription}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const canStartNewSearch = subscription.usage.activeJobs < subscription.limits.activeJobs && subscription.active;
+  const isTrialExpired = subscription.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Trial Banner */}
       {subscription.trialEndsAt && subscription.status === 'trialing' && (
         <TrialBanner subscription={subscription} />
+      )}
+
+      {/* Checkout Message */}
+      {checkoutMessage && (
+        <div className={`px-4 py-3 text-center ${
+          checkoutMessage.includes('successful') 
+            ? 'bg-green-600 text-white' 
+            : 'bg-yellow-600 text-white'
+        }`}>
+          {checkoutMessage}
+          <button
+            onClick={() => setCheckoutMessage('')}
+            className="ml-4 text-white hover:text-gray-200"
+          >
+            ×
+          </button>
+        </div>
       )}
 
       {/* Header */}
@@ -91,11 +139,18 @@ export function DashboardPage() {
                   Free Trial
                 </span>
               )}
+              {!subscription.active && (
+                <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                  Inactive
+                </span>
+              )}
             </div>
 
             <div className="flex items-center space-x-6">
               <div className="text-sm text-gray-600">
                 <span className="font-medium">{subscription.usage.activeJobs}</span> / {subscription.limits.activeJobs} active jobs
+                <br />
+                <span className="font-medium">{subscription.usage.leadsThisMonth || 0}</span> leads this month
               </div>
               
               {subscription.isAdmin && (
@@ -129,6 +184,31 @@ export function DashboardPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Trial Expired or Inactive Subscription */}
+        {(isTrialExpired || !subscription.active) && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-red-800 mb-2">
+                  {isTrialExpired ? 'Trial Expired' : 'Subscription Inactive'}
+                </h3>
+                <p className="text-red-700">
+                  {isTrialExpired 
+                    ? 'Your free trial has ended. Upgrade to continue generating leads.'
+                    : 'Your subscription is inactive. Please update your billing information.'
+                  }
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPricing(true)}
+                className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Upgrade Now
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Action Bar */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -151,14 +231,36 @@ export function DashboardPage() {
         {!canStartNewSearch && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-8">
             <p className="text-yellow-800">
-              You've reached your limit of {subscription.limits.activeJobs} active jobs. 
-              <button 
-                onClick={refreshSubscription}
-                className="ml-2 text-yellow-900 underline hover:no-underline"
-              >
-                Refresh status
-              </button> or upgrade your plan to run more searches simultaneously.
+              {!subscription.active 
+                ? 'Your subscription is inactive. Please upgrade to start new searches.'
+                : `You've reached your limit of ${subscription.limits.activeJobs} active jobs.`
+              }
+              {subscription.active && (
+                <>
+                  <button 
+                    onClick={refreshSubscription}
+                    className="ml-2 text-yellow-900 underline hover:no-underline"
+                  >
+                    Refresh status
+                  </button> or upgrade your plan to run more searches simultaneously.
+                </>
+              )}
             </p>
+          </div>
+        )}
+
+        {/* Pricing Modal */}
+        {showPricing && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="relative max-w-7xl w-full bg-white rounded-2xl p-8">
+              <button
+                onClick={() => setShowPricing(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+              <PricingTable />
+            </div>
           </div>
         )}
 
