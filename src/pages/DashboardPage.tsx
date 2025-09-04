@@ -1,17 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Settings, LogOut, Shield, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 import { SearchWizard } from '../components/SearchWizard';
 import { LeadsPipeline } from '../components/LeadsPipeline';
 import { PricingTable } from '../components/PricingTable';
 import { TrialBanner } from '../components/TrialBanner';
-import { api } from '../services/api';
 
 export function DashboardPage() {
-  const { user, subscription, logout, refreshSubscription } = useAuth();
   const [showWizard, setShowWizard] = useState(false);
   const [activeJobs, setActiveJobs] = useState<string[]>([]);
+  
+  // Mock subscription for demo
+  const subscription = {
+    active: true,
+    status: 'trialing' as const,
+    trialEndsAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    tier: 'pro' as const,
+    limits: {
+      leadsPerSearch: 50,
+      activeJobs: 3,
+      features: ['Priority scraping', 'Advanced email templates']
+    },
+    usage: {
+      activeJobs: 1,
+      searchesThisMonth: 12
+    },
+    isAdmin: true,
+    customerEmail: 'demo@microtix.com'
+  };
 
   useEffect(() => {
     const savedJobs = localStorage.getItem('microtix_active_jobs');
@@ -37,41 +53,16 @@ export function DashboardPage() {
   };
 
   const handleBillingPortal = async () => {
-    try {
-      const { url } = await api.getPortal();
-      window.open(url, '_blank');
-    } catch (error) {
-      console.error('Failed to open billing portal:', error);
-      alert('Failed to open billing portal. Please try again.');
-    }
+    alert('Billing portal would open here');
   };
 
-  if (!subscription) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  const logout = () => {
+    alert('Logout would happen here');
+  };
 
-  // Show pricing if no active subscription and no trial
-  if (!subscription.active && !subscription.trialEndsAt) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">
-              Welcome to MicroTix
-            </h1>
-            <p className="text-xl text-gray-600">
-              Choose a plan to start generating qualified leads
-            </p>
-          </div>
-          <PricingTable />
-        </div>
-      </div>
-    );
-  }
+  const refreshSubscription = () => {
+    alert('Subscription refreshed');
+  };
 
   const canStartNewSearch = subscription.usage.activeJobs < subscription.limits.activeJobs;
 

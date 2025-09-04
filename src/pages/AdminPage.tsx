@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
 import { AdminPanel } from '../components/AdminPanel';
 
 export function AdminPage() {
-  const { user, logout } = useAuth();
+  const user = { email: 'admin@microtix.com' };
+  const logout = () => alert('Logout would happen here');
 
   return (
     <div className="min-h-screen bg-gray-50">
