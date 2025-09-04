@@ -1,100 +1,41 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Micro Ticket Deal Engine - Commercial Capital Connect</title>
+    <title>MicroTix - AI LeadGen Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        // =====================================================================================
-        // IMPORTANT: REPLACE "YOUR_GOOGLE_PLACES_API_KEY_HERE" WITH YOUR ACTUAL GOOGLE PLACES API KEY
-        // IF THE ONE BELOW IS A PLACEHOLDER OR INVALID.
-        // =====================================================================================
-        window.process = {
-          env: {
-            REACT_APP_GOOGLE_PLACES_API_KEY: "AIzaSyBt-lfvLReozrb3knQKyJMkWq4T38csB74"
-            // This key will be used by the App.tsx component.
-            // Ensure the Google Places API is enabled for this key in your Google Cloud Console.
-          }
-        };
-        // =====================================================================================
-    </script>
     <style>
-        /* Custom styles for range inputs for consistent appearance */
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent;
-            cursor: pointer;
-            width: 100%; /* Ensure full width for Tailwind integration */
-        }
-
-        /* Webkit (Chrome, Safari, newer Edge) */
-        input[type="range"]::-webkit-slider-runnable-track {
-            background: #1e40af; /* Tailwind blue-800 */
-            height: 12px;
-            border-radius: 6px;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            margin-top: -4px; /* (track height - thumb height) / 2 --> (12px - 20px) / 2 = -4px */
-            background-color: #fbbf24; /* Tailwind amber-400 */
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-        }
-
-        /* Firefox */
-        input[type="range"]::-moz-range-track {
-            background: #1e40af; /* Tailwind blue-800 */
-            height: 12px;
-            border-radius: 6px;
-        }
-        input[type="range"]::-moz-range-thumb {
-            background: #fbbf24; /* Tailwind amber-400 */
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            border: none; /* Reset default border */
-        }
-
-        /* MS Edge (older, pre-Chromium) - Less critical now but good for completeness if needed */
-        input[type="range"]::-ms-track {
-            width: 100%;
-            height: 12px;
-            background: transparent; 
-            border-color: transparent;
-            color: transparent;
-        }
-        input[type="range"]::-ms-fill-lower {
-            background: #1e40af;
-            border-radius: 6px;
-        }
-        input[type="range"]::-ms-fill-upper {
-            background: #1e40af; /* Same as lower to make it look solid */
-            border-radius: 6px;
-        }
-        input[type="range"]::-ms-thumb {
-            margin-top: 0px; /* Align thumb with track */
-            background: #fbbf24;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            border: 0;
-        }
-
-        /* Ensure Tailwind base styles don't interfere too much */
         body {
-          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #581c87 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
         }
     </style>
-   
 </head>
-<body class="bg-blue-900">
+<body class="bg-gray-50">
     <div id="root"></div>
-    <!-- React app will be injected here by src/main.tsx -->
     <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

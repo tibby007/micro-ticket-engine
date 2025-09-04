@@ -4,6 +4,8 @@ import { auth } from '../config/firebase';
 import { api } from '../services/api';
 import type { User, Subscription } from '../types';
 
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || 'admin@microtix.com').split(',');
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -21,10 +23,29 @@ export function useAuth() {
 
         try {
           const subData = await api.getMe();
-          setSubscription(subData);
+          // Check if user is admin based on email
+          const isAdmin = ADMIN_EMAILS.includes(firebaseUser.email!);
+          setSubscription({ ...subData, isAdmin });
         } catch (error) {
           console.error('Failed to fetch subscription:', error);
-          setSubscription(null);
+          // Create default subscription for new users
+          const isAdmin = ADMIN_EMAILS.includes(firebaseUser.email!);
+          setSubscription({
+            active: false,
+            status: 'trialing',
+            tier: 'starter',
+            limits: {
+              leadsPerSearch: 20,
+              activeJobs: 1,
+              features: ['Basic email templates', 'Standard enrichment']
+            },
+            usage: {
+              activeJobs: 0,
+              searchesThisMonth: 0
+            },
+            isAdmin,
+            customerEmail: firebaseUser.email!
+          });
         }
       } else {
         setUser(null);
@@ -46,13 +67,16 @@ export function useAuth() {
 
   const logout = async () => {
     await signOut(auth);
+    // Clear any stored data
+    localStorage.removeItem('microtix_active_jobs');
   };
 
   const refreshSubscription = async () => {
     if (user) {
       try {
         const subData = await api.getMe();
-        setSubscription(subData);
+        const isAdmin = ADMIN_EMAILS.includes(user.email);
+        setSubscription({ ...subData, isAdmin });
       } catch (error) {
         console.error('Failed to refresh subscription:', error);
       }

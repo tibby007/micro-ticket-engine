@@ -1,14 +1,15 @@
 import { auth } from '../config/firebase';
-import type { Subscription, LeadJob, Lead, SearchRequest } from '../types';
+import type { Subscription, LeadJob, Lead, SearchRequest, AdminStats } from '../types';
 
 const API_BASE = {
-  me: import.meta.env.VITE_N8N_ME_URL,
-  checkout: import.meta.env.VITE_N8N_CHECKOUT_URL,
-  portal: import.meta.env.VITE_N8N_PORTAL_URL,
-  start: import.meta.env.VITE_N8N_START_URL,
-  status: import.meta.env.VITE_N8N_STATUS_URL,
-  results: import.meta.env.VITE_N8N_RESULTS_URL,
-  update: import.meta.env.VITE_N8N_UPDATE_URL,
+  me: import.meta.env.VITE_N8N_ME_URL || 'https://n8n.example.com/webhook/microtix/me',
+  checkout: import.meta.env.VITE_N8N_CHECKOUT_URL || 'https://n8n.example.com/webhook/microtix/checkout',
+  portal: import.meta.env.VITE_N8N_PORTAL_URL || 'https://n8n.example.com/webhook/microtix/portal',
+  start: import.meta.env.VITE_N8N_START_URL || 'https://n8n.example.com/webhook/microtix/start',
+  status: import.meta.env.VITE_N8N_STATUS_URL || 'https://n8n.example.com/webhook/microtix/status',
+  results: import.meta.env.VITE_N8N_RESULTS_URL || 'https://n8n.example.com/webhook/microtix/results',
+  update: import.meta.env.VITE_N8N_UPDATE_URL || 'https://n8n.example.com/webhook/microtix/update',
+  admin: import.meta.env.VITE_N8N_ADMIN_URL || 'https://n8n.example.com/webhook/microtix/admin',
 };
 
 async function getAuthToken(): Promise<string> {
@@ -30,7 +31,8 @@ async function apiCall<T>(url: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`API call failed: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   return response.json();
@@ -70,5 +72,14 @@ export const api = {
     apiCall(API_BASE.update, {
       method: 'POST',
       body: JSON.stringify({ leadId, status }),
+    }),
+
+  // Admin endpoints
+  getAdminStats: (): Promise<AdminStats> => apiCall(API_BASE.admin),
+
+  retryJob: (jobId: string): Promise<{ ok: boolean }> =>
+    apiCall(`${API_BASE.admin}/retry`, {
+      method: 'POST',
+      body: JSON.stringify({ jobId }),
     }),
 };
