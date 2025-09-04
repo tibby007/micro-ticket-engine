@@ -1,65 +1,128 @@
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { 
+  User,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail
+} from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { api } from '../services/api';
+import type { Subscription } from '../types';
 
-export interface AuthUser {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  emailVerified: boolean;
+interface AuthState {
+  user: User | null;
+  subscription: Subscription | null;
+  loading: boolean;
+  error: string | null;
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [idToken, setIdToken] = useState<string | null>(null);
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    subscription: null,
+    loading: true,
+    error: null
+  });
+
+  const refreshSubscription = async () => {
+    if (!authState.user) return;
+    
+    try {
+      const subscription = await api.getSubscription();
+      setAuthState(prev => ({ ...prev, subscription, error: null }));
+    } catch (error) {
+      console.error('Failed to refresh subscription:', error);
+      setAuthState(prev => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Failed to load subscription'
+      }));
+    }
+  };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
-      if (firebaseUser) {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
         try {
-          const token = await firebaseUser.getIdToken();
-          setIdToken(token);
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            emailVerified: firebaseUser.emailVerified,
+          const subscription = await api.getSubscription();
+          setAuthState({
+            user,
+            subscription,
+            loading: false,
+            error: null
           });
         } catch (error) {
-          console.error('Error getting ID token:', error);
-          setUser(null);
-          setIdToken(null);
+          console.error('Failed to load subscription:', error);
+          setAuthState({
+            user,
+            subscription: null,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Failed to load subscription'
+          });
         }
       } else {
-        setUser(null);
-        setIdToken(null);
+        setAuthState({
+          user: null,
+          subscription: null,
+          loading: false,
+          error: null
+        });
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
-  const refreshToken = async () => {
-    if (auth.currentUser) {
-      try {
-        const token = await auth.currentUser.getIdToken(true);
-        setIdToken(token);
-        return token;
-      } catch (error) {
-        console.error('Error refreshing token:', error);
-        return null;
-      }
+  const login = async (email: string, password: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, error: null }));
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      throw error;
     }
-    return null;
+  };
+
+  const register = async (email: string, password: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, error: null }));
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
+      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      throw error;
+    }
   };
 
   return {
-    user,
-    loading,
-    idToken,
-    refreshToken,
-    isAuthenticated: !!user,
+    user: authState.user,
+    subscription: authState.subscription,
+    loading: authState.loading,
+    error: authState.error,
+    login,
+    register,
+    logout,
+    resetPassword,
+    refreshSubscription
   };
 }
