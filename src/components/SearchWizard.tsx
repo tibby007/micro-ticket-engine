@@ -40,15 +40,14 @@ const LEAD_COUNTS = [
   { label: '25 leads', value: 25 },
   { label: '50 leads', value: 50 },
   { label: '75 leads', value: 75 },
-  { label: '100 leads', value: 100 },
-];
+  { label: '100 leads', value: 100 }
 ];
 
 const RADIUS_OPTIONS = [
   { label: '10 miles', value: 10 },
   { label: '25 miles', value: 25 },
   { label: '50 miles', value: 50 },
-  { label: '100 miles', value: 100 },
+  { label: '100 miles', value: 100 }
 ];
 
 export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWizardProps) {
@@ -132,7 +131,6 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
               {INDUSTRIES.map((industry) => (
                 <button
                   key={industry}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
                   onClick={() => setFormData({ ...formData, industry })}
                   className={`p-4 text-left rounded-xl border-2 transition-all hover:shadow-md ${
                     formData.industry === industry
@@ -232,7 +230,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
                     <button
                       key={radius.value}
                       onClick={() => setFormData({ ...formData, radius: radius.value })}
-                      className={\`p-4 rounded-xl border-2 transition-all ${
+                      className={`p-4 rounded-xl border-2 transition-all ${
                         formData.radius === radius.value
                           ? 'border-blue-500 bg-blue-50 text-blue-700'
                           : 'border-gray-200 hover:border-blue-300'
@@ -256,11 +254,11 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
                     onChange={(e) => setKeywordInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
                     className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    className={`p-4 rounded-xl border-2 transition-all ${
+                  />
                   <button
                     type="button"
                     onClick={addKeyword}
-                    }`}
+                    className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Add
                   </button>
@@ -276,7 +274,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
                         <button
                           type="button"
                           onClick={() => removeKeyword(keyword)}
-                      \    className="ml-2 text-blue-600 hover:text-blue-800"
+                          className="ml-2 text-blue-600 hover:text-blue-800"
                         >
                           ×
                         </button>
@@ -301,7 +299,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
         {[1, 2, 3].map((step) => (
           <div key={step} className="flex items-center">
             <div
-              className={\`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
+              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
                 step <= currentStep
                   ? 'bg-blue-600 text-white shadow-lg'
                   : step === currentStep + 1
@@ -313,7 +311,6 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
             </div>
             {step < 3 && (
               <div
-                className={\`w-20 h-1 mx-3 transition-all ${
                 className={`w-20 h-1 mx-3 transition-all ${
                   step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
                 }`}
