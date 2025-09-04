@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Phone, Globe, MapPin, CheckCircle, Search, Building, DollarSign, Users, Target } from 'lucide-react';
+import { Mail, Phone, Globe, MapPin, CheckCircle, Search, Building, Users, Target } from 'lucide-react';
 import { api } from '../services/api';
 import type { Lead, LeadJob } from '../types';
 
@@ -70,14 +70,6 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
 
   const getLeadsByStatus = (status: Lead['status']): Lead[] => {
     return Object.values(leads).flat().filter(lead => lead.status === status);
-  };
-
-  const getStatusIcon = (status: Lead['status']) => {
-    switch (status) {
-      case 'searching': return <Search className="w-5 h-5 text-yellow-500 animate-spin" />;
-      case 'returned': return <CheckCircle className="w-5 h-5 text-blue-500" />;
-      case 'emailed': return <Mail className="w-5 h-5 text-green-500" />;
-    }
   };
 
   const getStatusColor = (status: Lead['status']) => {

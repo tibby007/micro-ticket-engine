@@ -1,4 +1,3 @@
-import React from 'react';
 import { Check, Star, Zap, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
 
