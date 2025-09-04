@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import type { User } from 'firebase/auth';
 import { 
-  User,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
