@@ -52,16 +52,7 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
 
   const handleStatusChange = async (leadId: string, newStatus: Lead['status']) => {
     try {
-      // Find the job ID for this lead
-      const jobId = Object.keys(leads).find(jId => 
-        leads[jId].some(lead => lead.id === leadId)
-      );
-      
-      if (!jobId) {
-        throw new Error('Job ID not found for lead');
-      }
-      
-      await api.updateLead(jobId, leadId, newStatus);
+      await api.updateLead(foundJobId, leadId, newStatus);
       
       setLeads(prev => {
         const updated = { ...prev };
@@ -71,9 +62,6 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
           );
         });
         return updated;
-      });
-    } catch (error) {
-      console.error('Failed to update lead status:', error);
       alert('Failed to update lead status. Please try again.');
     }
   };

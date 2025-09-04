@@ -41,7 +41,6 @@ const LEAD_COUNTS = [
   { label: '50 leads', value: 50 },
   { label: '75 leads', value: 75 },
   { label: '100 leads', value: 100 }
-];
 
 const RADIUS_OPTIONS = [
   { label: '10 miles', value: 10 },
