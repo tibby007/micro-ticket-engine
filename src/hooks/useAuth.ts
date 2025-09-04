@@ -33,6 +33,7 @@ export function useAuth() {
           setSubscription({
             active: false,
             status: 'trialing',
+            trialEndsAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
             tier: 'starter',
             limits: {
               leadsPerSearch: 20,
