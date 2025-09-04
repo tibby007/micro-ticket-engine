@@ -52,7 +52,16 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
 
   const handleStatusChange = async (leadId: string, newStatus: Lead['status']) => {
     try {
-      await api.updateLead(leadId, newStatus);
+      // Find the job ID for this lead
+      const jobId = Object.keys(leads).find(jId => 
+        leads[jId].some(lead => lead.id === leadId)
+      );
+      
+      if (!jobId) {
+        throw new Error('Job ID not found for lead');
+      }
+      
+      await api.updateLead(jobId, leadId, newStatus);
       
       setLeads(prev => {
         const updated = { ...prev };
@@ -65,6 +74,7 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
       });
     } catch (error) {
       console.error('Failed to update lead status:', error);
+      alert('Failed to update lead status. Please try again.');
     }
   };
 
@@ -74,16 +84,20 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
 
   const getStatusColor = (status: Lead['status']) => {
     switch (status) {
-      case 'searching': return 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
-      case 'returned': return 'bg-blue-50 border-blue-200 hover:bg-blue-100';
-      case 'emailed': return 'bg-green-50 border-green-200 hover:bg-green-100';
+      case 'new': return 'bg-blue-50 border-blue-200 hover:bg-blue-100';
+      case 'contacted': return 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
+      case 'qualified': return 'bg-green-50 border-green-200 hover:bg-green-100';
+      case 'disqualified': return 'bg-red-50 border-red-200 hover:bg-red-100';
+      case 'won': return 'bg-purple-50 border-purple-200 hover:bg-purple-100';
     }
   };
 
   const columns = [
-    { id: 'searching', title: 'Searching', status: 'searching' as const, icon: Search },
-    { id: 'returned', title: 'Ready to Contact', status: 'returned' as const, icon: CheckCircle },
-    { id: 'emailed', title: 'Contacted', status: 'emailed' as const, icon: Mail },
+    { id: 'new', title: 'New Leads', status: 'new' as const, icon: Users },
+    { id: 'contacted', title: 'Contacted', status: 'contacted' as const, icon: Mail },
+    { id: 'qualified', title: 'Qualified', status: 'qualified' as const, icon: CheckCircle },
+    { id: 'disqualified', title: 'Disqualified', status: 'disqualified' as const, icon: Target },
+    { id: 'won', title: 'Won', status: 'won' as const, icon: Building },
   ];
 
   const totalLeads = Object.values(leads).flat().length;
@@ -159,8 +173,8 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
         <div className="bg-white rounded-xl shadow-sm p-6 border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Contacted</p>
-              <p className="text-2xl font-bold text-gray-900">{getLeadsByStatus('emailed').length}</p>
+              <p className="text-sm font-medium text-gray-600">Won</p>
+              <p className="text-2xl font-bold text-gray-900">{getLeadsByStatus('won').length}</p>
             </div>
             <Mail className="w-8 h-8 text-purple-600" />
           </div>
@@ -176,10 +190,13 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="font-semibold text-gray-900 text-lg">
-                    {job.searchParams.industry}
+                    {job.searchParams.industry} in {job.searchParams.city}, {job.searchParams.state}
                   </h4>
                   <p className="text-gray-600">
-                    {job.searchParams.city}, {job.searchParams.state} • {job.searchParams.fundingType === 'equipment' ? 'Equipment' : 'Working Capital'} • ${job.searchParams.fundingAmount.min.toLocaleString()} - ${job.searchParams.fundingAmount.max.toLocaleString()}
+                    {job.searchParams.leadCount || 50} leads • {job.searchParams.radius || 25} mile radius
+                    {job.searchParams.keywords && job.searchParams.keywords.length > 0 && (
+                      <span> • Keywords: {job.searchParams.keywords.join(', ')}</span>
+                    )}
                   </p>
                 </div>
                 <span className={`px-4 py-2 rounded-full text-sm font-medium ${
@@ -206,6 +223,12 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                 </div>
               )}
               
+              {job.status === 'failed' && job.error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm">{job.error}</p>
+                </div>
+              )}
+              
               <div className="text-sm text-gray-500">
                 Started: {new Date(job.createdAt).toLocaleString()}
                 {job.completedAt && (
@@ -221,7 +244,7 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
       {totalLeads > 0 && (
         <div>
           <h3 className="text-xl font-semibold text-gray-900 mb-6">Lead Pipeline</h3>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-5 md:grid-cols-3 gap-4 overflow-x-auto">
             {columns.map((column) => {
               const columnLeads = getLeadsByStatus(column.status);
               
@@ -229,9 +252,11 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                 <div key={column.id} className="bg-gray-50 rounded-xl p-6">
                   <div className="flex items-center space-x-3 mb-6">
                     <column.icon className={`w-6 h-6 ${
-                      column.status === 'searching' ? 'text-yellow-500' :
-                      column.status === 'returned' ? 'text-blue-500' :
-                      'text-green-500'
+                      column.status === 'new' ? 'text-blue-500' :
+                      column.status === 'contacted' ? 'text-yellow-500' :
+                      column.status === 'qualified' ? 'text-green-500' :
+                      column.status === 'disqualified' ? 'text-red-500' :
+                      'text-purple-500'
                     }`} />
                     <h4 className="font-semibold text-gray-900 text-lg">{column.title}</h4>
                     <span className="bg-white text-gray-700 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
@@ -301,9 +326,11 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                             className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <option value="searching">Searching</option>
-                            <option value="returned">Ready</option>
-                            <option value="emailed">Contacted</option>
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="qualified">Qualified</option>
+                            <option value="disqualified">Disqualified</option>
+                            <option value="won">Won</option>
                           </select>
                         </div>
                       </div>
@@ -424,18 +451,25 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                 </div>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => handleStatusChange(selectedLead.id, 'returned')}
-                    disabled={selectedLead.status === 'returned'}
+                    onClick={() => handleStatusChange(selectedLead.id, 'contacted')}
+                    disabled={selectedLead.status === 'contacted'}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    Mark Ready
+                    Mark Contacted
                   </button>
                   <button
-                    onClick={() => handleStatusChange(selectedLead.id, 'emailed')}
-                    disabled={selectedLead.status === 'emailed'}
+                    onClick={() => handleStatusChange(selectedLead.id, 'qualified')}
+                    disabled={selectedLead.status === 'qualified'}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    Mark Contacted
+                    Mark Qualified
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(selectedLead.id, 'won')}
+                    disabled={selectedLead.status === 'won'}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Mark Won
                   </button>
                 </div>
               </div>

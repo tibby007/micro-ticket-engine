@@ -35,50 +35,81 @@ const US_STATES = [
   'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 ];
 
-const FUNDING_AMOUNTS = [
-  { label: '$10K - $25K', min: 10000, max: 25000 },
-  { label: '$25K - $50K', min: 25000, max: 50000 },
-  { label: '$50K - $100K', min: 50000, max: 100000 },
-  { label: '$100K - $250K', min: 100000, max: 250000 },
-  { label: '$250K - $500K', min: 250000, max: 500000 },
-  { label: '$500K+', min: 500000, max: 1000000 },
+const LEAD_COUNTS = [
+  { label: '10 leads', value: 10 },
+  { label: '25 leads', value: 25 },
+  { label: '50 leads', value: 50 },
+  { label: '75 leads', value: 75 },
+  { label: '100 leads', value: 100 },
+];
+
+const RADIUS_OPTIONS = [
+  { label: '10 miles', value: 10 },
+  { label: '25 miles', value: 25 },
+  { label: '50 miles', value: 50 },
+  { label: '100 miles', value: 100 },
 ];
 
 export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState<SearchRequest>({
     industry: '',
     city: '',
     state: '',
-    fundingType: 'equipment',
-    fundingAmount: { min: 10000, max: 50000 }
+    leadCount: 25,
+    radius: 25,
+    keywords: []
   });
+  const [keywordInput, setKeywordInput] = useState('');
 
   const canProceed = (step: number): boolean => {
     switch (step) {
       case 1: return !!formData.industry;
       case 2: return !!formData.city && !!formData.state;
-      case 3: return !!formData.fundingType;
-      case 4: return formData.fundingAmount.min > 0 && formData.fundingAmount.max > formData.fundingAmount.min;
+      case 3: return !!formData.leadCount && !!formData.radius;
       default: return false;
     }
   };
 
+  const addKeyword = () => {
+    if (keywordInput.trim() && !formData.keywords?.includes(keywordInput.trim())) {
+      setFormData({
+        ...formData,
+        keywords: [...(formData.keywords || []), keywordInput.trim()]
+      });
+      setKeywordInput('');
+    }
+  };
+
+  const removeKeyword = (keyword: string) => {
+    setFormData({
+      ...formData,
+      keywords: formData.keywords?.filter(k => k !== keyword) || []
+    });
+  };
+
   const handleSubmit = async () => {
     if (subscription.usage.activeJobs >= subscription.limits.activeJobs) {
-      alert(`You've reached your limit of ${subscription.limits.activeJobs} active jobs. Upgrade your plan or wait for current jobs to complete.`);
+      setError(`You've reached your limit of ${subscription.limits.activeJobs} active jobs. Upgrade your plan or wait for current jobs to complete.`);
+      return;
+    }
+
+    if ((formData.leadCount || 0) > subscription.limits.leadsPerSearch) {
+      setError(`Your ${subscription.tier} plan allows up to ${subscription.limits.leadsPerSearch} leads per search. Please reduce the lead count or upgrade your plan.`);
       return;
     }
 
     setIsSubmitting(true);
+    setError('');
     try {
       const { jobId } = await api.startSearch(formData);
       onJobCreated(jobId);
       onClose();
     } catch (error) {
       console.error('Failed to start search:', error);
-      alert('Failed to start search. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to start search. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -161,77 +192,96 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
       case 3:
         return (
           <div className="text-center slide-in">
-            <Zap className="w-20 h-20 text-blue-600 mx-auto mb-6" />
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
-              Funding Type
-            </h3>
-            <p className="text-gray-600 mb-8 text-lg">
-              What type of funding are you offering?
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-              <button
-                onClick={() => setFormData({ ...formData, fundingType: 'equipment' })}
-                className={`p-8 rounded-2xl border-2 transition-all hover:shadow-lg ${
-                  formData.fundingType === 'equipment'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <div className="text-2xl font-bold mb-3">Equipment Financing</div>
-                <div className="text-gray-600">
-                  Machinery, vehicles, technology, manufacturing equipment
-                </div>
-              </button>
-              <button
-                onClick={() => setFormData({ ...formData, fundingType: 'mca' })}
-                className={`p-8 rounded-2xl border-2 transition-all hover:shadow-lg ${
-                  formData.fundingType === 'mca'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <div className="text-2xl font-bold mb-3">Working Capital</div>
-                <div className="text-gray-600">
-                  MCA, business loans, cash flow, inventory financing
-                </div>
-              </button>
-            </div>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="text-center slide-in">
             <DollarSign className="w-20 h-20 text-blue-600 mx-auto mb-6" />
             <h3 className="text-3xl font-bold text-gray-900 mb-4">
-              Funding Amount Range
+              Search Parameters
             </h3>
             <p className="text-gray-600 mb-8 text-lg">
-              What's your target funding range?
+              Configure your lead generation settings
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              {FUNDING_AMOUNTS.map((amount) => (
-                <button
-                  key={amount.label}
-                  onClick={() => setFormData({
-                    ...formData,
-                    fundingAmount: { min: amount.min, max: amount.max }
-                  })}
-                  className={`p-6 rounded-xl border-2 transition-all hover:shadow-md ${
-                    formData.fundingAmount.min === amount.min && formData.fundingAmount.max === amount.max
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <div className="text-lg font-semibold">{amount.label}</div>
-                </button>
-              ))}
-            </div>
-            
-            <div className="mt-8 p-6 bg-blue-50 rounded-xl max-w-md mx-auto">
-              <p className="text-sm text-blue-700 font-medium">
-                <strong>Your {subscription.tier} plan:</strong> Up to {subscription.limits.leadsPerSearch} leads per search
-              </p>
+            <div className="space-y-8 max-w-2xl mx-auto">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-4 text-left">
+                  Number of Leads (Max: {subscription.limits.leadsPerSearch})
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {LEAD_COUNTS.filter(count => count.value <= subscription.limits.leadsPerSearch).map((count) => (
+                    <button
+                      key={count.value}
+                      onClick={() => setFormData({ ...formData, leadCount: count.value })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        formData.leadCount === count.value
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {count.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-4 text-left">
+                  Search Radius
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {RADIUS_OPTIONS.map((radius) => (
+                    <button
+                      key={radius.value}
+                      onClick={() => setFormData({ ...formData, radius: radius.value })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        formData.radius === radius.value
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {radius.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-4 text-left">
+                  Keywords (Optional)
+                </label>
+                <div className="flex space-x-2 mb-3">
+                  <input
+                    type="text"
+                    placeholder="Add keyword..."
+                    value={keywordInput}
+                    onChange={(e) => setKeywordInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
+                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={addKeyword}
+                    className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+                {formData.keywords && formData.keywords.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.keywords.map((keyword, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center space-x-2"
+                      >
+                        <span>{keyword}</span>
+                        <button
+                          onClick={() => removeKeyword(keyword)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -245,7 +295,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
     <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl mx-auto">
       {/* Progress indicator */}
       <div className="flex items-center justify-center mb-12">
-        {[1, 2, 3, 4].map((step) => (
+        {[1, 2, 3].map((step) => (
           <div key={step} className="flex items-center">
             <div
               className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
@@ -258,7 +308,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
             >
               {step}
             </div>
-            {step < 4 && (
+            {step < 3 && (
               <div
                 className={`w-20 h-1 mx-3 transition-all ${
                   step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
@@ -268,6 +318,13 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
           </div>
         ))}
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
 
       {/* Step content */}
       <div className="min-h-[500px] flex flex-col justify-between">
@@ -284,7 +341,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
             <span>Back</span>
           </button>
 
-          {currentStep < 4 ? (
+          {currentStep < 3 ? (
             <button
               onClick={() => setCurrentStep(currentStep + 1)}
               disabled={!canProceed(currentStep)}

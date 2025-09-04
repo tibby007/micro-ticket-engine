@@ -4,7 +4,7 @@ import { auth } from '../config/firebase';
 import { api } from '../services/api';
 import type { User, Subscription } from '../types';
 
-const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || 'admin@microtix.com').split(',');
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || 'support@emergestack.dev').split(',');
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -28,7 +28,7 @@ export function useAuth() {
           setSubscription({ ...subData, isAdmin });
         } catch (error) {
           console.error('Failed to fetch subscription:', error);
-          // Create default subscription for new users
+          // Create default trial subscription for new users
           const isAdmin = ADMIN_EMAILS.includes(firebaseUser.email!);
           setSubscription({
             active: false,
@@ -38,11 +38,12 @@ export function useAuth() {
             limits: {
               leadsPerSearch: 20,
               activeJobs: 1,
-              features: ['Basic email templates', 'Standard enrichment']
+              features: ['Basic lead generation', 'Standard enrichment', 'Email support']
             },
             usage: {
               activeJobs: 0,
-              searchesThisMonth: 0
+              searchesThisMonth: 0,
+              leadsThisMonth: 0
             },
             isAdmin,
             customerEmail: firebaseUser.email!

@@ -17,6 +17,7 @@ export interface Subscription {
   usage: {
     activeJobs: number;
     searchesThisMonth: number;
+    leadsThisMonth: number;
   };
   isAdmin: boolean;
   customerEmail: string;
@@ -33,13 +34,18 @@ export interface Lead {
   address: string;
   category: string;
   tags: string[];
-  status: 'searching' | 'returned' | 'emailed';
+  status: 'new' | 'contacted' | 'qualified' | 'disqualified' | 'won';
   createdAt: string;
   jobId: string;
   enrichmentData?: {
     revenue?: string;
     employees?: string;
     industry?: string;
+    socialMedia?: {
+      facebook?: string;
+      linkedin?: string;
+      twitter?: string;
+    };
   };
 }
 
@@ -53,17 +59,16 @@ export interface LeadJob {
   searchParams: SearchRequest;
   createdAt: string;
   completedAt?: string;
+  error?: string;
 }
 
 export interface SearchRequest {
   industry: string;
   city: string;
   state: string;
-  fundingType: 'equipment' | 'mca';
-  fundingAmount: {
-    min: number;
-    max: number;
-  };
+  leadCount?: number;
+  radius?: number;
+  keywords?: string[];
 }
 
 export interface AdminStats {
@@ -71,9 +76,10 @@ export interface AdminStats {
   activeSubscriptions: number;
   totalRevenue: number;
   searchesThisMonth: number;
+  leadsGenerated: number;
   recentActivity: Array<{
     id: string;
-    type: 'search' | 'signup' | 'upgrade' | 'trial_started' | 'trial_ended';
+    type: 'search' | 'signup' | 'upgrade' | 'trial_started' | 'trial_ended' | 'lead_generated';
     user: string;
     timestamp: string;
     details: string;
@@ -82,5 +88,10 @@ export interface AdminStats {
     n8nStatus: 'healthy' | 'degraded' | 'down';
     stripeStatus: 'healthy' | 'degraded' | 'down';
     lastHealthCheck: string;
+  };
+  tierDistribution: {
+    starter: number;
+    pro: number;
+    premium: number;
   };
 }

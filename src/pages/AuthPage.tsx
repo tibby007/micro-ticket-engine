@@ -169,7 +169,7 @@ export function AuthPage() {
             {/* Admin Login Hint */}
             <div className="mt-6 p-3 bg-yellow-500/20 border border-yellow-400/50 rounded-lg">
               <p className="text-yellow-200 text-xs text-center">
-                Super Admin: Use admin@microtix.com for full system access
+                Super Admin: Use support@emergestack.dev for full system access
               </p>
             </div>
           </div>

@@ -5,13 +5,13 @@ const plans = [
   {
     name: 'Starter',
     price: 29.99,
-    priceId: import.meta.env.VITE_STRIPE_PRICE_STARTER || 'price_starter',
+    priceId: import.meta.env.VITE_STRIPE_PRICE_STARTER || 'price_1S3j3rB1YJBVEg8wbib0u6i4',
     leadsPerSearch: 20,
     activeJobs: 1,
     features: [
       'Up to 20 leads per search',
       '1 active job at a time',
-      'Basic email templates',
+      'Basic lead generation',
       'Standard enrichment',
       'Email support'
     ],
@@ -21,14 +21,14 @@ const plans = [
   {
     name: 'Pro',
     price: 99.99,
-    priceId: import.meta.env.VITE_STRIPE_PRICE_PRO || 'price_pro',
+    priceId: import.meta.env.VITE_STRIPE_PRICE_PRO || 'price_1S3j47B1YJBVEg8wTzNV0FPz',
     leadsPerSearch: 50,
     activeJobs: 3,
     features: [
       'Up to 50 leads per search',
       '3 active jobs simultaneously',
       'Priority scraping',
-      'Advanced email templates',
+      'Advanced lead generation',
       'Enhanced enrichment',
       'CSV export',
       'Priority support'
@@ -39,16 +39,16 @@ const plans = [
   {
     name: 'Premium',
     price: 199.99,
-    priceId: import.meta.env.VITE_STRIPE_PRICE_PREMIUM || 'price_premium',
+    priceId: import.meta.env.VITE_STRIPE_PRICE_PREMIUM || 'price_1S3j4PB1YJBVEg8wqPjEHsJV',
     leadsPerSearch: 100,
     activeJobs: 10,
     features: [
       'Up to 100 leads per search',
       '10 active jobs simultaneously',
       'Priority scraping',
-      'Custom email templates',
+      'Custom lead generation',
       'Advanced enrichment',
-      'Bulk email sequences',
+      'Bulk operations',
       'API access',
       'Dedicated success manager'
     ],

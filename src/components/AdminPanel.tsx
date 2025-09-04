@@ -25,6 +25,7 @@ export function AdminPanel() {
         activeSubscriptions: 189,
         totalRevenue: 18750,
         searchesThisMonth: 1456,
+        leadsGenerated: 12450,
         recentActivity: [
           {
             id: '1',
@@ -35,7 +36,7 @@ export function AdminPanel() {
           },
           {
             id: '2',
-            type: 'search',
+            type: 'lead_generated',
             user: 'sarah@lending.com',
             timestamp: new Date(Date.now() - 300000).toISOString(),
             details: 'Restaurants in Miami, FL - 45 leads found'
@@ -59,6 +60,11 @@ export function AdminPanel() {
           n8nStatus: 'healthy',
           stripeStatus: 'healthy',
           lastHealthCheck: new Date().toISOString()
+        },
+        tierDistribution: {
+          starter: 89,
+          pro: 78,
+          premium: 22
         }
       });
     } finally {
@@ -87,6 +93,7 @@ export function AdminPanel() {
       case 'upgrade': return <TrendingUp className="w-5 h-5" />;
       case 'trial_started': return <Clock className="w-5 h-5" />;
       case 'trial_ended': return <CreditCard className="w-5 h-5" />;
+      case 'lead_generated': return <Users className="w-5 h-5" />;
       default: return <Activity className="w-5 h-5" />;
     }
   };
@@ -98,6 +105,7 @@ export function AdminPanel() {
       case 'upgrade': return 'bg-purple-100 text-purple-600';
       case 'trial_started': return 'bg-yellow-100 text-yellow-600';
       case 'trial_ended': return 'bg-red-100 text-red-600';
+      case 'lead_generated': return 'bg-green-100 text-green-600';
       default: return 'bg-gray-100 text-gray-600';
     }
   };
@@ -226,11 +234,34 @@ export function AdminPanel() {
         <div className="bg-white rounded-xl shadow-sm p-6 border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Searches This Month</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.searchesThisMonth}</p>
-              <p className="text-xs text-gray-500 mt-1">Lead generation jobs</p>
+              <p className="text-sm font-medium text-gray-600">Leads Generated</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.leadsGenerated}</p>
+              <p className="text-xs text-gray-500 mt-1">Total leads this month</p>
             </div>
             <BarChart3 className="w-8 h-8 text-orange-600" />
+          </div>
+        </div>
+      </div>
+
+      {/* Tier Distribution */}
+      <div className="bg-white rounded-xl shadow-sm border">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-900">Subscription Tiers</h3>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600 mb-1">{stats.tierDistribution.starter}</div>
+              <div className="text-sm text-gray-600">Starter Plans</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600 mb-1">{stats.tierDistribution.pro}</div>
+              <div className="text-sm text-gray-600">Pro Plans</div>
+            </div>
+            <div className="text-center p-4 bg-yellow-50 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600 mb-1">{stats.tierDistribution.premium}</div>
+              <div className="text-sm text-gray-600">Premium Plans</div>
+            </div>
           </div>
         </div>
       </div>
@@ -257,7 +288,7 @@ export function AdminPanel() {
                   <div className="text-sm text-gray-500">
                     {new Date(activity.timestamp).toLocaleString()}
                   </div>
-                  {activity.type === 'search' && (
+                  {activity.type === 'lead_generated' && (
                     <button
                       onClick={() => handleRetryJob(activity.id)}
                       disabled={retryingJob === activity.id}
