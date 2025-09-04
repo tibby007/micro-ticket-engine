@@ -42,6 +42,7 @@ const LEAD_COUNTS = [
   { label: '75 leads', value: 75 },
   { label: '100 leads', value: 100 },
 ];
+];
 
 const RADIUS_OPTIONS = [
   { label: '10 miles', value: 10 },
@@ -131,6 +132,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
               {INDUSTRIES.map((industry) => (
                 <button
                   key={industry}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
                   onClick={() => setFormData({ ...formData, industry })}
                   className={`p-4 text-left rounded-xl border-2 transition-all hover:shadow-md ${
                     formData.industry === industry
@@ -254,11 +256,11 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
                     onChange={(e) => setKeywordInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
                     className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                    className={`p-4 rounded-xl border-2 transition-all ${
                   <button
                     type="button"
                     onClick={addKeyword}
-                    className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    }`}
                   >
                     Add
                   </button>
@@ -312,6 +314,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
             {step < 3 && (
               <div
                 className={\`w-20 h-1 mx-3 transition-all ${
+                className={`w-20 h-1 mx-3 transition-all ${
                   step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
                 }`}
               />
