@@ -1,100 +1,72 @@
 import { auth } from '../config/firebase';
-import type { Subscription, LeadJob, Lead, SearchRequest, AdminStats } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://aimarvels.app.n8n.cloud/webhook/microtix';
+const POST_API_BASE = "https://aimarvels.app.n8n.cloud/webhook/microtix";
+const GET_API_BASE = "https://aimarvels.app.n8n.cloud/webhook/microtix-get";
 
-async function getAuthToken(): Promise<string> {
+// Helper function to get Firebase ID token
+const getIdToken = async () => {
+  // Your existing Firebase auth logic to get ID token
   const user = auth.currentUser;
-  if (!user) throw new Error('Not authenticated');
   return await user.getIdToken();
-}
-
-async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = await getAuthToken();
-  const url = `${API_BASE}${endpoint}`;
-  
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    let errorMessage = `API call failed: ${response.status} ${response.statusText}`;
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      errorMessage = errorData.message || errorData.error || errorMessage;
-    } catch {
-      // Use default error message if response is not JSON
-    }
-    
-    throw new Error(errorMessage);
-  }
-
-  return response.json();
-}
+};
 
 export const api = {
-  // Get user subscription and admin status
-  getMe: (): Promise<Subscription> => apiCall('/me'),
-
-  // Create Stripe checkout session
-  createCheckout: (priceId: string): Promise<{ url: string }> => {
-    const successUrl = `${window.location.origin}/dashboard?checkout=success`;
-    const cancelUrl = `${window.location.origin}/dashboard?checkout=cancel`;
-    
-    return apiCall('/checkout', {
-      method: 'POST',
-      body: JSON.stringify({ priceId, successUrl, cancelUrl }),
+  // GET requests use the GET webhook
+  async getMe() {
+    const token = await getIdToken();
+    return fetch(`${GET_API_BASE}/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
   },
-
-  // Get Stripe portal URL
-  getPortal: (): Promise<{ url: string }> => apiCall('/portal', { method: 'POST' }),
-
-  // Start lead search job
-  startSearch: (request: SearchRequest): Promise<{ jobId: string }> => {
-    const payload = {
-      industry: request.industry,
-      city: request.city,
-      state: request.state,
-      leadCount: request.leadCount || 50,
-      radius: request.radius || 25,
-      keywords: request.keywords || []
-    };
-    
-    return apiCall('/start', {
-      method: 'POST',
-      body: JSON.stringify(payload),
+  
+  async getJobStatus(jobId) {
+    const token = await getIdToken();
+    return fetch(`${GET_API_BASE}/status?jobId=${jobId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
   },
-
-  // Get job status
-  getJobStatus: (jobId: string): Promise<LeadJob> =>
-    apiCall(`/status?jobId=${jobId}`),
-
-  // Get job results
-  getJobResults: (jobId: string): Promise<{ leads: Lead[] }> =>
-    apiCall(`/results?jobId=${jobId}`),
-
-  // Update lead status
-  updateLead: (jobId: string, leadId: string, stage: Lead['status']): Promise<{ ok: boolean }> =>
-    apiCall('/update', {
+  
+  async getJobResults(jobId) {
+    const token = await getIdToken();
+    return fetch(`${GET_API_BASE}/results?jobId=${jobId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+  
+  // POST requests use the POST webhook  
+  async startLeadGeneration(data) {
+    const token = await getIdToken();
+    return fetch(`${POST_API_BASE}/start`, { 
+      method: 'POST', 
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data) 
+    });
+  },
+  
+  async updateLeadStage(data) {
+    const token = await getIdToken();
+    return fetch(`${POST_API_BASE}/update`, { 
       method: 'POST',
-      body: JSON.stringify({ jobId, leadId, stage }),
-    }),
-
-  // Admin endpoints
-  getAdminStats: (): Promise<AdminStats> => apiCall('/admin'),
-
-  retryJob: (jobId: string): Promise<{ ok: boolean }> =>
-    apiCall('/admin/retry', {
+      headers: {
+        'Content-Type': 'application/json', 
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data) 
+    });
+  },
+  
+  async createCheckout(data) {
+    const token = await getIdToken();
+    return fetch(`${POST_API_BASE}/checkout`, { 
       method: 'POST',
-      body: JSON.stringify({ jobId }),
-    }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data) 
+    });
+  }
 };
