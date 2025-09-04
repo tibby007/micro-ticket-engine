@@ -30,8 +30,8 @@ export function useAuth() {
     if (!authState.user) return;
     
     try {
-      const subscription = await api.getMe();
-      setAuthState(prev => ({ ...prev, subscription, error: null }));
+      const userInfo = await api.getMe();
+      setAuthState(prev => ({ ...prev, subscription: userInfo, error: null }));
     } catch (error) {
       console.error('Failed to refresh subscription:', error);
       setAuthState(prev => ({ 
@@ -45,10 +45,10 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const subscription = await api.getMe();
+          const userInfo = await api.getMe();
           setAuthState({
             user,
-            subscription,
+            subscription: userInfo,
             loading: false,
             error: null
           });
