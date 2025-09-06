@@ -95,6 +95,7 @@ export function DashboardPage() {
   }
 
   const canStartNewSearch = subscription.usage.activeJobs < subscription.limits.activeJobs && subscription.active;
+  const canStartNewSearch = (subscription?.usage?.activeJobs ?? 0) < (subscription?.limits?.activeJobs ?? 0) && subscription?.active;
   const isTrialExpired = subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
 
   return (
@@ -148,9 +149,9 @@ export function DashboardPage() {
 
             <div className="flex items-center space-x-6">
               <div className="text-sm text-gray-600">
-                <span className="font-medium">{subscription?.usage?.activeJobs || 0}</span> / {subscription?.limits?.activeJobs || 0} active jobs
+                <span className="font-medium">{subscription?.usage?.activeJobs ?? 0}</span> / {subscription?.limits?.activeJobs ?? 0} active jobs
                 <br />
-                <span className="font-medium">{subscription?.usage?.leadsThisMonth || 0}</span> leads this month
+                <span className="font-medium">{subscription?.usage?.leadsThisMonth ?? 0}</span> leads this month
               </div>
               
               {subscription?.isAdmin && (
@@ -233,7 +234,7 @@ export function DashboardPage() {
             <p className="text-yellow-800">
               {subscription && !subscription.active 
                 ? 'Your subscription is inactive. Please upgrade to start new searches.'
-                : `You've reached your limit of ${subscription?.limits?.activeJobs || 0} active jobs.`
+                : `You've reached your limit of ${subscription?.limits?.activeJobs ?? 0} active jobs.`
               }
               {subscription?.active && (
                 <>
