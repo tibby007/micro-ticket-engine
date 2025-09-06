@@ -25,28 +25,22 @@ export interface Subscription {
 
 export interface Lead {
   id: string;
-  businessName: string;
-  contactInfo: {
-    email?: string;
-    phone?: string;
-    website?: string;
-  };
+  name: string;              // Real business name like "Atlanta Breakfast Club"
+  phone: string | null;      // Real phone numbers like "(404) 555-1234"
+  email: string | null;      // Usually null from Outscraper
+  website: string | null;    // Real websites
+  rating: string | null;     // Google ratings like "4.2"
+  city: string;
+  state: string;
   address: string;
   category: string;
-  tags: string[];
-  status: 'new' | 'contacted' | 'qualified' | 'disqualified' | 'won';
+  stage: 'New' | 'Contacted' | 'Qualified' | 'Disqualified' | 'Won';
   createdAt: string;
-  jobId: string;
-  enrichmentData?: {
-    revenue?: string;
-    employees?: string;
-    industry?: string;
-    socialMedia?: {
-      facebook?: string;
-      linkedin?: string;
-      twitter?: string;
-    };
-  };
+  source: 'outscraper';
+  googleId?: string;
+  placeId?: string;
+  reviewsCount?: number;
+  workingHours?: string;
 }
 
 export interface LeadJob {

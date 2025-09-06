@@ -104,7 +104,20 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
     setIsSubmitting(true);
     setError('');
     try {
-      const { jobId } = await api.startSearch(formData);
+      const response = await api.startLeadGeneration({
+        industry: formData.industry,
+        city: formData.city,
+        state: formData.state,
+        leadCount: formData.leadCount,
+        radius: formData.radius || 25,
+        keywords: formData.keywords?.join(', ') || ''
+      });
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      const { jobId } = response;
       onJobCreated(jobId);
       onClose();
     } catch (error) {
