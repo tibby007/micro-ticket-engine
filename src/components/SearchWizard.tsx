@@ -91,13 +91,13 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
   };
 
   const handleSubmit = async () => {
-    if (subscription.usage.activeJobs >= subscription.limits.activeJobs) {
-      setError(`You've reached your limit of ${subscription.limits.activeJobs} active jobs. Upgrade your plan or wait for current jobs to complete.`);
+    if ((subscription.usage?.activeJobs || 0) >= (subscription.limits?.activeJobs || 0)) {
+      setError(`You've reached your limit of ${subscription.limits?.activeJobs || 0} active jobs. Upgrade your plan or wait for current jobs to complete.`);
       return;
     }
 
-    if ((formData.leadCount || 0) > subscription.limits.leadsPerSearch) {
-      setError(`Your ${subscription.tier} plan allows up to ${subscription.limits.leadsPerSearch} leads per search. Please reduce the lead count or upgrade your plan.`);
+    if ((formData.leadCount || 0) > (subscription.limits?.leadsPerSearch || 0)) {
+      setError(`Your ${subscription.tier} plan allows up to ${subscription.limits?.leadsPerSearch || 0} leads per search. Please reduce the lead count or upgrade your plan.`);
       return;
     }
 
@@ -215,10 +215,10 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
             <div className="space-y-8 max-w-2xl mx-auto">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4 text-left">
-                  Number of Leads (Max: {subscription.limits.leadsPerSearch})
+                  Number of Leads (Max: {subscription.limits?.leadsPerSearch || 50})
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {LEAD_COUNTS.filter(count => count.value <= subscription.limits.leadsPerSearch).map((count) => (
+                  {LEAD_COUNTS.filter(count => count.value <= (subscription.limits?.leadsPerSearch || 50)).map((count) => (
                     <button
                       key={count.value}
                       onClick={() => setFormData({ ...formData, leadCount: count.value })}
