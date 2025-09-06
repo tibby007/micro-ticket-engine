@@ -10,13 +10,15 @@ import { PricingTable } from '../components/PricingTable';
 import { TrialBanner } from '../components/TrialBanner';
 import { api } from '../services/api';
 
+// Add interface here - OUTSIDE of any function
 interface User {
   uid: string;
   email: string;
   emailVerified: boolean;
   displayName: string;
   isAdmin: boolean;
-  subscription?: any; 
+  subscription: any;
+}
   
 export function DashboardPage() {
   const { user, subscription, loading, logout, refreshSubscription } = useAuth();
