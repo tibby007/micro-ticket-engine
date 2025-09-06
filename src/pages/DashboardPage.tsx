@@ -98,7 +98,7 @@ export function DashboardPage() {
   const isTrialExpired = subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
   
   // Admin users should bypass subscription restrictions - check by email
-  const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || 'support@emergestack.dev').split(',').map(email => email.trim());
+  const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || 'support@emergestack.dev').split(',').map((email: string) => email.trim());
   const isAdmin = user?.email ? adminEmails.includes(user.email) : false;
   const canStartNewSearchWithAdmin = isAdmin || canStartNewSearch;
   const showInactiveWarning = !isAdmin && (isTrialExpired || !subscription?.active);
