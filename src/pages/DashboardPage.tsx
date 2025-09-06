@@ -95,12 +95,12 @@ export function DashboardPage() {
   }
 
   const canStartNewSearch = subscription.usage.activeJobs < subscription.limits.activeJobs && subscription.active;
-  const isTrialExpired = subscription.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
+  const isTrialExpired = subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Trial Banner */}
-      {subscription.trialEndsAt && subscription.status === 'trialing' && (
+      {subscription?.trialEndsAt && subscription?.status === 'trialing' && (
         <TrialBanner subscription={subscription} />
       )}
 
@@ -128,18 +128,18 @@ export function DashboardPage() {
             <div className="flex items-center space-x-4">
               <h1 className="text-3xl font-bold text-gray-900">MicroTix</h1>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                subscription.tier === 'starter' ? 'bg-blue-100 text-blue-800' :
-                subscription.tier === 'pro' ? 'bg-purple-100 text-purple-800' :
+                subscription?.tier === 'starter' ? 'bg-blue-100 text-blue-800' :
+                subscription?.tier === 'pro' ? 'bg-purple-100 text-purple-800' :
                 'bg-yellow-100 text-yellow-800'
               }`}>
-                {subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)}
+                {subscription?.tier ? subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1) : 'Loading...'}
               </span>
-              {subscription.status === 'trialing' && (
+              {subscription?.status === 'trialing' && (
                 <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                   Free Trial
                 </span>
               )}
-              {!subscription.active && (
+              {subscription && !subscription.active && (
                 <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
                   Inactive
                 </span>
@@ -148,12 +148,12 @@ export function DashboardPage() {
 
             <div className="flex items-center space-x-6">
               <div className="text-sm text-gray-600">
-                <span className="font-medium">{subscription.usage.activeJobs}</span> / {subscription.limits.activeJobs} active jobs
+                <span className="font-medium">{subscription?.usage?.activeJobs || 0}</span> / {subscription?.limits?.activeJobs || 0} active jobs
                 <br />
-                <span className="font-medium">{subscription.usage.leadsThisMonth || 0}</span> leads this month
+                <span className="font-medium">{subscription?.usage?.leadsThisMonth || 0}</span> leads this month
               </div>
               
-              {subscription.isAdmin && (
+              {subscription?.isAdmin && (
                 <Link
                   to="/admin"
                   className="flex items-center space-x-2 text-purple-600 hover:text-purple-800 transition-colors"
@@ -185,7 +185,7 @@ export function DashboardPage() {
 
       <div className="container mx-auto px-4 py-8">
         {/* Trial Expired or Inactive Subscription */}
-        {(isTrialExpired || !subscription.active) && (
+        {subscription && (isTrialExpired || !subscription.active) && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
             <div className="flex items-center justify-between">
               <div>
@@ -231,11 +231,11 @@ export function DashboardPage() {
         {!canStartNewSearch && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-8">
             <p className="text-yellow-800">
-              {!subscription.active 
+              {subscription && !subscription.active 
                 ? 'Your subscription is inactive. Please upgrade to start new searches.'
-                : `You've reached your limit of ${subscription.limits.activeJobs} active jobs.`
+                : `You've reached your limit of ${subscription?.limits?.activeJobs || 0} active jobs.`
               }
-              {subscription.active && (
+              {subscription?.active && (
                 <>
                   <button 
                     onClick={refreshSubscription}
@@ -265,7 +265,7 @@ export function DashboardPage() {
         )}
 
         {/* Search Wizard Modal */}
-        {showWizard && (
+        {showWizard && subscription && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="relative max-w-5xl w-full">
               <SearchWizard

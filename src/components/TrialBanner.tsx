@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import type { Subscription } from '../types';
 
 interface TrialBannerProps {
-  subscription: Subscription;
+  subscription: Subscription | null;
 }
 
 export function TrialBanner({ subscription }: TrialBannerProps) {
@@ -12,11 +12,11 @@ export function TrialBanner({ subscription }: TrialBannerProps) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    if (!subscription.trialEndsAt) return;
+    if (!subscription?.trialEndsAt) return;
 
     const updateCountdown = () => {
       const now = new Date().getTime();
-      const trialEnd = new Date(subscription.trialEndsAt!).getTime();
+      const trialEnd = new Date(subscription!.trialEndsAt!).getTime();
       const difference = trialEnd - now;
 
       if (difference > 0) {
@@ -32,7 +32,7 @@ export function TrialBanner({ subscription }: TrialBannerProps) {
     const interval = setInterval(updateCountdown, 60000);
 
     return () => clearInterval(interval);
-  }, [subscription.trialEndsAt]);
+  }, [subscription?.trialEndsAt]);
 
   const handleActivateNow = async () => {
     try {
@@ -43,7 +43,7 @@ export function TrialBanner({ subscription }: TrialBannerProps) {
     }
   };
 
-  if (!subscription.trialEndsAt || new Date(subscription.trialEndsAt) <= new Date() || !isVisible) {
+  if (!subscription?.trialEndsAt || new Date(subscription.trialEndsAt) <= new Date() || !isVisible) {
     return null;
   }
 
