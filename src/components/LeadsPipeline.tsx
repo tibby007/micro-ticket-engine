@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, Phone, Globe, MapPin, CheckCircle, Search, Building, Users, Target, Star, Clock } from 'lucide-react';
+import { Mail, Phone, Globe, MapPin, CheckCircle, Search, Building, Users, Target, Star } from 'lucide-react';
 import { api } from '../services/api';
 import type { Lead, LeadJob } from '../types';
 
@@ -482,7 +482,7 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                   {selectedLead.workingHours && (
                     <div>
                       <span className="text-sm text-gray-600">Hours:</span>
-                      <div className="font-medium text-sm">{selectedLead.workingHours}</div>
+                      <div className="font-medium text-sm">{selectedLead.workingHours ?? ''}</div>
                     </div>
                   )}
                   

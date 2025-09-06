@@ -26,7 +26,6 @@ export function AdminPanel() {
         totalRevenue: 18750,
         searchesThisMonth: 1456,
         leadsGenerated: 12450,
-        leadsGenerated: 12450,
         recentActivity: [
           {
             id: '1',
@@ -66,11 +65,6 @@ export function AdminPanel() {
           starter: 89,
           pro: 78,
           premium: 22
-        },
-        tierDistribution: {
-          starter: 89,
-          pro: 78,
-          premium: 22
         }
       });
     } finally {
@@ -100,7 +94,6 @@ export function AdminPanel() {
       case 'trial_started': return <Clock className="w-5 h-5" />;
       case 'trial_ended': return <CreditCard className="w-5 h-5" />;
       case 'lead_generated': return <Users className="w-5 h-5" />;
-      case 'lead_generated': return <Users className="w-5 h-5" />;
       default: return <Activity className="w-5 h-5" />;
     }
   };
@@ -112,7 +105,6 @@ export function AdminPanel() {
       case 'upgrade': return 'bg-purple-100 text-purple-600';
       case 'trial_started': return 'bg-yellow-100 text-yellow-600';
       case 'trial_ended': return 'bg-red-100 text-red-600';
-      case 'lead_generated': return 'bg-green-100 text-green-600';
       case 'lead_generated': return 'bg-green-100 text-green-600';
       default: return 'bg-gray-100 text-gray-600';
     }
