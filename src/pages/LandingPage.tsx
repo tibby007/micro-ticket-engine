@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, Target, Sparkles, TrendingUp, Check, Star, ArrowRight, Building, Users, Mail } from 'lucide-react';
+import { Zap, Target, Sparkles, TrendingUp, Check, Star, ArrowRight, Mail } from 'lucide-react';
 import { PricingTable } from '../components/PricingTable';
 
 export function LandingPage() {

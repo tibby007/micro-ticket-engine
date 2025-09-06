@@ -45,7 +45,7 @@ export interface Lead {
 
 export interface LeadJob {
   id: string;
-  status: 'searching' | 'completed' | 'failed';
+  status: 'searching' | 'processing' | 'completed' | 'failed';
   progress: number;
   total: number;
   processed: number;
