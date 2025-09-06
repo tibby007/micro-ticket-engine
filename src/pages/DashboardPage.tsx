@@ -94,7 +94,6 @@ export function DashboardPage() {
     );
   }
 
-  const canStartNewSearch = subscription.usage.activeJobs < subscription.limits.activeJobs && subscription.active;
   const canStartNewSearch = (subscription?.usage?.activeJobs ?? 0) < (subscription?.limits?.activeJobs ?? 0) && subscription?.active;
   const isTrialExpired = subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
 
