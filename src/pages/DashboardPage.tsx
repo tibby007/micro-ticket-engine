@@ -10,6 +10,14 @@ import { PricingTable } from '../components/PricingTable';
 import { TrialBanner } from '../components/TrialBanner';
 import { api } from '../services/api';
 
+interface User {
+  uid: string;
+  email: string;
+  emailVerified: boolean;
+  displayName: string;
+  isAdmin: boolean;
+  subscription?: any; 
+  
 export function DashboardPage() {
   const { user, subscription, loading, logout, refreshSubscription } = useAuth();
   const [showWizard, setShowWizard] = useState(false);
