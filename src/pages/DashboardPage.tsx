@@ -9,16 +9,6 @@ import { LeadsPipeline } from '../components/LeadsPipeline';
 import { PricingTable } from '../components/PricingTable';
 import { TrialBanner } from '../components/TrialBanner';
 import { api } from '../services/api';
-
-// Add interface here - OUTSIDE of any function
-interface User {
-  uid: string;
-  email: string;
-  emailVerified: boolean;
-  displayName: string;
-  isAdmin: boolean;
-  subscription: any;
-}
   
 export function DashboardPage() {
   const { user, subscription, loading, logout, refreshSubscription } = useAuth();
@@ -108,7 +98,8 @@ export function DashboardPage() {
   const isTrialExpired = subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
   
   // Admin users should bypass subscription restrictions - check by email
-  const isAdmin = user?.isAdmin || false;
+  const isAdmin = (user as any)?.isAdmin || false;
+
   const canStartNewSearchWithAdmin = isAdmin || canStartNewSearch;
   const showInactiveWarning = !isAdmin && (isTrialExpired || !subscription?.active);
 
@@ -168,7 +159,7 @@ export function DashboardPage() {
                 <span className="font-medium">{subscription?.usage?.leadsThisMonth ?? 0}</span> leads this month
               </div>
               
-              {user?.isAdmin && (
+              {(user as any)?.isAdmin && (
                 <Link
                   to="/admin"
                   className="flex items-center space-x-2 text-purple-600 hover:text-purple-800 transition-colors"
