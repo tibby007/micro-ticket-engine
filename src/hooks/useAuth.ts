@@ -10,6 +10,27 @@ import {
 import { auth } from '../config/firebase';
 import { api } from '../services/api';
 import type { Subscription } from '../types';
+import type { User as FirebaseUser } from 'firebase/auth';
+
+function adminFallbackSubscription(user: FirebaseUser): Subscription {
+  return {
+    active: true,
+    status: 'active',
+    tier: 'premium',
+    limits: {
+      leadsPerSearch: 1000,
+      activeJobs: 1000,
+      features: ['admin']
+    },
+    usage: {
+      activeJobs: 0,
+      searchesThisMonth: 0,
+      leadsThisMonth: 0
+    },
+    isAdmin: true,
+    customerEmail: user.email || ''
+  };
+}
 
 interface AuthState {
   user: User | null;
@@ -34,10 +55,14 @@ export function useAuth() {
       setAuthState(prev => ({ ...prev, subscription: userInfo, error: null }));
     } catch (error) {
       console.error('Failed to refresh subscription:', error);
-      setAuthState(prev => ({ 
-        ...prev, 
-        error: error instanceof Error ? error.message : 'Failed to load subscription'
-      }));
+      try {
+        const tokenResult = await authState.user.getIdTokenResult(true);
+        if (tokenResult.claims?.isAdmin === true) {
+          setAuthState(prev => ({ ...prev, subscription: adminFallbackSubscription(authState.user!), error: null }));
+          return;
+        }
+      } catch {}
+      setAuthState(prev => ({ ...prev, error: error instanceof Error ? error.message : 'Failed to load subscription' }));
     }
   };
 
@@ -54,12 +79,14 @@ export function useAuth() {
           });
         } catch (error) {
           console.error('Failed to load subscription:', error);
-          setAuthState({
-            user,
-            subscription: null,
-            loading: false,
-            error: error instanceof Error ? error.message : 'Failed to load subscription'
-          });
+          try {
+            const tokenResult = await user.getIdTokenResult(true);
+            if (tokenResult.claims?.isAdmin === true) {
+              setAuthState({ user, subscription: adminFallbackSubscription(user), loading: false, error: null });
+              return;
+            }
+          } catch {}
+          setAuthState({ user, subscription: null, loading: false, error: error instanceof Error ? error.message : 'Failed to load subscription' });
         }
       } else {
         setAuthState({
