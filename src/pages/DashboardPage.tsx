@@ -259,7 +259,7 @@ export function DashboardPage() {
         )}
 
         {/* Pricing Modal */}
-        {showPricing && (
+        {!isAdmin && showPricing && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="relative max-w-7xl w-full bg-white rounded-2xl p-8">
               <button
