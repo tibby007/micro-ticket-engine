@@ -38,7 +38,14 @@ export function DashboardPage() {
     const savedJobs = localStorage.getItem('microtix_active_jobs');
     if (savedJobs) {
       try {
-        setActiveJobs(JSON.parse(savedJobs));
+        const parsed = JSON.parse(savedJobs);
+        const sanitized = Array.isArray(parsed)
+          ? parsed.filter((id) => typeof id === 'string' && id.length >= 6 && /^[A-Za-z0-9_-]+$/.test(id) && !id.startsWith('demo'))
+          : [];
+        setActiveJobs(sanitized);
+        if (sanitized.length !== (Array.isArray(parsed) ? parsed.length : 0)) {
+          localStorage.setItem('microtix_active_jobs', JSON.stringify(sanitized));
+        }
       } catch (error) {
         console.error('Failed to parse saved jobs:', error);
         localStorage.removeItem('microtix_active_jobs');
