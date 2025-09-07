@@ -144,7 +144,7 @@ export function DashboardPage() {
                   Free Trial
                 </span>
               )}
-              {subscription && !subscription.active && (
+              {subscription && !subscription.active && !isAdmin && (
                 <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
                   Inactive
                 </span>

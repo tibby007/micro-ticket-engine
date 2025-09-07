@@ -54,7 +54,8 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const isAdmin = Boolean(subscription?.isAdmin);
+  const adminEmails = ['support@emergestack.dev', 'cltibbs2@gmail.com'];
+  const isAdmin = Boolean(subscription?.isAdmin) || adminEmails.includes(subscription?.customerEmail || '');
   const [formData, setFormData] = useState<SearchRequest>({
     industry: '',
     city: '',
