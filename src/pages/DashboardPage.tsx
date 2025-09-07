@@ -58,6 +58,10 @@ export function DashboardPage() {
       console.error('Refusing to add invalid jobId to activeJobs:', jobId);
       return;
     }
+    if (/^demo/i.test(jobId)) {
+      console.error('Refusing to add demo jobId to activeJobs:', jobId);
+      return;
+    }
     const updatedJobs = [...activeJobs, jobId];
     setActiveJobs(updatedJobs);
     localStorage.setItem('microtix_active_jobs', JSON.stringify(updatedJobs));

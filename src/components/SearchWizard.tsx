@@ -129,9 +129,19 @@ export function SearchWizard({ subscription, isAdmin: isAdminProp, onJobCreated,
         response?.job_id
       );
 
+      // Helpful diagnostics in console to verify backend payload
+      // Note: safe to leave for now; remove if too noisy later
+      // eslint-disable-next-line no-console
+      console.log('Start response payload:', response, 'extracted jobId:', jobId);
+
       if (!jobId || typeof jobId !== 'string') {
         console.error('Unexpected start response shape:', response);
         throw new Error('Server did not return a job id. Please try again.');
+      }
+
+      // Guard against accidental demo IDs from backend
+      if (/^demo/i.test(jobId)) {
+        throw new Error('Backend returned a demo job id. Please fix the n8n start response to return a real jobId.');
       }
 
       onJobCreated(jobId);
