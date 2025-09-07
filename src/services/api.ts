@@ -21,10 +21,18 @@ export const api = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to start lead generation: ${response.statusText}`);
+      throw new Error(`Failed to start lead generation: ${response.status} ${response.statusText}`);
     }
-    
-    return response.json();
+    // Guard against empty body or non-JSON responses
+    const text = await response.text();
+    if (!text || !text.trim()) {
+      throw new Error('Empty response from /start');
+    }
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error('Invalid JSON from /start');
+    }
   },
 
   // Get user subscription info
