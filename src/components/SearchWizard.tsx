@@ -120,7 +120,20 @@ export function SearchWizard({ subscription, isAdmin: isAdminProp, onJobCreated,
         throw new Error(response.error);
       }
       
-      const { jobId } = response;
+      // Be resilient to different shapes returned by backend
+      const jobId = (
+        response?.jobId ??
+        response?.id ??
+        response?.job?.id ??
+        response?.data?.jobId ??
+        response?.job_id
+      );
+
+      if (!jobId || typeof jobId !== 'string') {
+        console.error('Unexpected start response shape:', response);
+        throw new Error('Server did not return a job id. Please try again.');
+      }
+
       onJobCreated(jobId);
       onClose();
     } catch (error) {

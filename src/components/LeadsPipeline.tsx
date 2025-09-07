@@ -20,6 +20,7 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
       const updatedJobs: string[] = [];
       
       for (const jobId of activeJobs) {
+        if (!jobId) continue;
         try {
           const jobStatus = await api.getJobStatus(jobId);
           
@@ -34,11 +35,14 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
             // Get results when job is completed
             const jobResults = await api.getJobResults(jobId);
             setLeads(prev => ({ ...prev, [jobId]: jobResults.leads || [] }));
-          } else if (jobStatus.status === 'processing' || jobStatus.status === 'searching') {
-            updatedJobs.push(jobId);
-            setIsGenerating(true);
           } else if (jobStatus.status === 'failed') {
             console.error(`Job ${jobId} failed:`, jobStatus.message);
+          } else if (jobStatus.status === 'failed') {
+            console.error(`Job ${jobId} failed:`, jobStatus.message);
+          } else {
+            // Treat any other status (e.g., queued, created) as in-progress to avoid prematurely clearing UI
+            updatedJobs.push(jobId);
+            setIsGenerating(true);
           }
         } catch (error) {
           console.error(`Failed to fetch data for job ${jobId}:`, error);

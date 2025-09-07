@@ -47,6 +47,10 @@ export function DashboardPage() {
   }, []);
 
   const handleJobCreated = (jobId: string) => {
+    if (!jobId || typeof jobId !== 'string') {
+      console.error('Refusing to add invalid jobId to activeJobs:', jobId);
+      return;
+    }
     const updatedJobs = [...activeJobs, jobId];
     setActiveJobs(updatedJobs);
     localStorage.setItem('microtix_active_jobs', JSON.stringify(updatedJobs));
