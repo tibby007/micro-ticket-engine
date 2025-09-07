@@ -97,9 +97,9 @@ export function DashboardPage() {
   const canStartNewSearch = (subscription?.usage?.activeJobs ?? 0) < (subscription?.limits?.activeJobs ?? 0) && subscription?.active;
   const isTrialExpired = subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
   
-  // Admin users should bypass subscription restrictions - check by email
+  // Admin users bypass subscription restrictions. Prefer backend flag, fallback to email allowlist.
   const adminEmails = ['support@emergestack.dev', 'cltibbs2@gmail.com'];
-  const isAdmin = user?.email ? adminEmails.includes(user.email) : false;
+  const isAdmin = Boolean(subscription?.isAdmin) || (user?.email ? adminEmails.includes(user.email) : false);
   const canStartNewSearchWithAdmin = isAdmin || canStartNewSearch;
   const showInactiveWarning = !isAdmin && (isTrialExpired || !subscription?.active);
   return (
@@ -153,12 +153,12 @@ export function DashboardPage() {
 
             <div className="flex items-center space-x-6">
               <div className="text-sm text-gray-600">
-                <span className="font-medium">{subscription?.usage?.activeJobs ?? 0}</span> / {subscription?.limits?.activeJobs ?? 0} active jobs
+                <span className="font-medium">{subscription?.usage?.activeJobs ?? 0}</span> / {isAdmin ? '∞' : (subscription?.limits?.activeJobs ?? 0)} active jobs
                 <br />
                 <span className="font-medium">{subscription?.usage?.leadsThisMonth ?? 0}</span> leads this month
               </div>
               
-              {(user as any)?.isAdmin && (
+              {isAdmin && (
                 <Link
                   to="/admin"
                   className="flex items-center space-x-2 text-purple-600 hover:text-purple-800 transition-colors"

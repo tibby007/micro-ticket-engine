@@ -54,6 +54,7 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const isAdmin = Boolean(subscription?.isAdmin);
   const [formData, setFormData] = useState<SearchRequest>({
     industry: '',
     city: '',
@@ -91,12 +92,12 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
   };
 
   const handleSubmit = async () => {
-    if ((subscription.usage?.activeJobs || 0) >= (subscription.limits?.activeJobs || 0)) {
+    if (!isAdmin && (subscription.usage?.activeJobs || 0) >= (subscription.limits?.activeJobs || 0)) {
       setError(`You've reached your limit of ${subscription.limits?.activeJobs || 0} active jobs. Upgrade your plan or wait for current jobs to complete.`);
       return;
     }
 
-    if ((formData.leadCount || 0) > (subscription.limits?.leadsPerSearch || 0)) {
+    if (!isAdmin && (formData.leadCount || 0) > (subscription.limits?.leadsPerSearch || 0)) {
       setError(`Your ${subscription.tier} plan allows up to ${subscription.limits?.leadsPerSearch || 0} leads per search. Please reduce the lead count or upgrade your plan.`);
       return;
     }
@@ -122,7 +123,12 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
       onClose();
     } catch (error) {
       console.error('Failed to start search:', error);
-      setError(error instanceof Error ? error.message : 'Failed to start search. Please try again.');
+      const message = error instanceof Error ? error.message : 'Failed to start search. Please try again.';
+      if (isAdmin && /limit|upgrade|active jobs|subscription/i.test(message)) {
+        setError('Encountered a transient limit check. As admin, please retry.');
+      } else {
+        setError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -215,10 +221,10 @@ export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWiza
             <div className="space-y-8 max-w-2xl mx-auto">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4 text-left">
-                  Number of Leads (Max: {subscription.limits?.leadsPerSearch || 50})
+                  Number of Leads (Max: {isAdmin ? 'Unlimited' : (subscription.limits?.leadsPerSearch || 50)})
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {LEAD_COUNTS.filter(count => count.value <= (subscription.limits?.leadsPerSearch || 50)).map((count) => (
+                  {LEAD_COUNTS.filter(count => isAdmin || count.value <= (subscription.limits?.leadsPerSearch || 50)).map((count) => (
                     <button
                       key={count.value}
                       onClick={() => setFormData({ ...formData, leadCount: count.value })}
