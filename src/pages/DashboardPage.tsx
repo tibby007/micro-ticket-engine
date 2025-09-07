@@ -98,11 +98,10 @@ export function DashboardPage() {
   const isTrialExpired = subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
   
   // Admin users should bypass subscription restrictions - check by email
-  const isAdmin = (user as any)?.isAdmin || false;
-
+  const adminEmails = ['support@emergestack.dev', 'cltibbs2@gmail.com'];
+  const isAdmin = user?.email ? adminEmails.includes(user.email) : false;
   const canStartNewSearchWithAdmin = isAdmin || canStartNewSearch;
   const showInactiveWarning = !isAdmin && (isTrialExpired || !subscription?.active);
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Trial Banner */}
