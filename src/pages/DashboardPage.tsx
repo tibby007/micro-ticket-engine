@@ -139,7 +139,7 @@ export function DashboardPage() {
               }`}>
                 {subscription?.tier ? subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1) : 'Loading...'}
               </span>
-              {subscription?.status === 'trialing' && (
+              {!isAdmin && subscription?.status === 'trialing' && (
                 <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
                   Free Trial
                 </span>
@@ -279,6 +279,7 @@ export function DashboardPage() {
             <div className="relative max-w-5xl w-full">
               <SearchWizard
                 subscription={subscription}
+                isAdmin={isAdmin}
                 onJobCreated={handleJobCreated}
                 onClose={() => setShowWizard(false)}
               />

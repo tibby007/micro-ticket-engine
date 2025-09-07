@@ -5,6 +5,7 @@ import type { SearchRequest, Subscription } from '../types';
 
 interface SearchWizardProps {
   subscription: Subscription;
+  isAdmin?: boolean;
   onJobCreated: (jobId: string) => void;
   onClose: () => void;
 }
@@ -50,12 +51,12 @@ const RADIUS_OPTIONS = [
   { label: '100 miles', value: 100 }
 ];
 
-export function SearchWizard({ subscription, onJobCreated, onClose }: SearchWizardProps) {
+export function SearchWizard({ subscription, isAdmin: isAdminProp, onJobCreated, onClose }: SearchWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const adminEmails = ['support@emergestack.dev', 'cltibbs2@gmail.com'];
-  const isAdmin = Boolean(subscription?.isAdmin) || adminEmails.includes(subscription?.customerEmail || '');
+  const isAdmin = Boolean(isAdminProp ?? subscription?.isAdmin) || adminEmails.includes(subscription?.customerEmail || '');
   const [formData, setFormData] = useState<SearchRequest>({
     industry: '',
     city: '',
