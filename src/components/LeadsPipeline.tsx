@@ -4,11 +4,13 @@ import type { Lead } from '../types';
 
 interface LeadsPipelineProps {
   leads: Lead[];
+  onLeadsChange?: (leads: Lead[]) => void;
 }
 
-export function LeadsPipeline({ leads }: LeadsPipelineProps) {
+export function LeadsPipeline({ leads, onLeadsChange }: LeadsPipelineProps) {
   const [items, setItems] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [newNote, setNewNote] = useState('');
 
   useEffect(() => {
     // Normalize incoming leads: ensure unique id and stage
@@ -24,10 +26,27 @@ export function LeadsPipeline({ leads }: LeadsPipelineProps) {
   }, [leads]);
 
   const handleStageChange = (leadId: string, newStage: Lead['stage']) => {
-    setItems(prev => prev.map(l => l.id === leadId ? { ...l, stage: newStage } : l));
+    setItems(prev => {
+      const updated = prev.map(l => l.id === leadId ? { ...l, stage: newStage } : l);
+      onLeadsChange?.(updated);
+      return updated;
+    });
     if (selectedLead?.id === leadId) {
       setSelectedLead({ ...selectedLead, stage: newStage });
     }
+  };
+
+  const handleAddNote = () => {
+    const text = newNote.trim();
+    if (!selectedLead || !text) return;
+    const note = { id: `${Date.now()}`, text, createdAt: new Date().toISOString() };
+    setItems(prev => {
+      const updated = prev.map(l => l.id === selectedLead.id ? { ...l, notes: [...(l.notes || []), note] } : l);
+      onLeadsChange?.(updated);
+      return updated;
+    });
+    setSelectedLead({ ...selectedLead, notes: [...(selectedLead.notes || []), note] });
+    setNewNote('');
   };
 
   const getLeadsByStage = (stage: Lead['stage']): Lead[] => items.filter(lead => lead.stage === stage);
@@ -242,9 +261,9 @@ export function LeadsPipeline({ leads }: LeadsPipelineProps) {
               </button>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Contact Information</h4>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-3">Contact Information</h4>
                 <div className="space-y-3">
                   {selectedLead.phone && (
                     <div className="flex items-center space-x-3">
@@ -284,48 +303,80 @@ export function LeadsPipeline({ leads }: LeadsPipelineProps) {
                     <span>{selectedLead.city}, {selectedLead.state}</span>
                   </div>
                 </div>
-              </div>
+            </div>
 
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Business Details</h4>
-                <div className="space-y-3">
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-3">Business Details</h4>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm text-gray-600">Category:</span>
+                  <div className="font-medium">{selectedLead.category}</div>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-600">Source:</span>
+                  <div className="font-medium capitalize">{selectedLead.source}</div>
+                </div>
+                
+                {Array.isArray(selectedLead.equipmentRecommendations) && selectedLead.equipmentRecommendations.length > 0 && (
                   <div>
-                    <span className="text-sm text-gray-600">Category:</span>
-                    <div className="font-medium">{selectedLead.category}</div>
+                    <span className="text-sm text-gray-600">Equipment Recommendations:</span>
+                    <ul className="list-disc list-inside text-sm text-gray-800 mt-1">
+                      {selectedLead.equipmentRecommendations.map((rec, i) => (
+                        <li key={i}>{rec}</li>
+                      ))}
+                    </ul>
                   </div>
-                  
+                )}
+                
+                {selectedLead.workingHours && (
                   <div>
-                    <span className="text-sm text-gray-600">Source:</span>
-                    <div className="font-medium capitalize">{selectedLead.source}</div>
+                    <span className="text-sm text-gray-600">Hours:</span>
+                    <div className="font-medium text-sm">{selectedLead.workingHours ?? ''}</div>
                   </div>
-                  
-                  {Array.isArray(selectedLead.equipmentRecommendations) && selectedLead.equipmentRecommendations.length > 0 && (
-                    <div>
-                      <span className="text-sm text-gray-600">Equipment Recommendations:</span>
-                      <ul className="list-disc list-inside text-sm text-gray-800 mt-1">
-                        {selectedLead.equipmentRecommendations.map((rec, i) => (
-                          <li key={i}>{rec}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {selectedLead.workingHours && (
-                    <div>
-                      <span className="text-sm text-gray-600">Hours:</span>
-                      <div className="font-medium text-sm">{selectedLead.workingHours ?? ''}</div>
-                    </div>
-                  )}
-                  
-                  {selectedLead.googleId && (
-                    <div>
-                      <span className="text-sm text-gray-600">Google Business:</span>
-                      <div className="font-medium text-xs text-green-600">Verified</div>
-                    </div>
-                  )}
+                )}
+                
+                {selectedLead.googleId && (
+                  <div>
+                    <span className="text-sm text-gray-600">Google Business:</span>
+                    <div className="font-medium text-xs text-green-600">Verified</div>
+                  </div>
+                )}
+                
+                <div className="pt-2">
+                  <span className="text-sm font-semibold text-gray-900">Notes</span>
+                  <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                    {(selectedLead.notes || []).length === 0 && (
+                      <div className="text-sm text-gray-500">No notes yet</div>
+                    )}
+                    {(selectedLead.notes || []).map(n => (
+                      <div key={n.id} className="bg-gray-50 border border-gray-200 rounded-md p-2">
+                        <div className="text-xs text-gray-500">
+                          {new Date(n.createdAt).toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-800 whitespace-pre-wrap">{n.text}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex items-start space-x-2">
+                    <textarea
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Add a note..."
+                      className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      rows={2}
+                    />
+                    <button
+                      onClick={handleAddNote}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="flex items-center justify-between">

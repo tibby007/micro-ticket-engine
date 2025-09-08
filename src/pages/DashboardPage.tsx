@@ -273,7 +273,7 @@ export function DashboardPage() {
         )}
 
         {/* Pipeline */}
-        <LeadsPipeline leads={sessionLeads} />
+        <LeadsPipeline leads={sessionLeads} onLeadsChange={setSessionLeads} />
       </div>
     </div>
   );

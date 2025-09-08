@@ -43,6 +43,15 @@ export interface Lead {
   workingHours?: string;
   // New workflow may include recommendations for equipment
   equipmentRecommendations?: string[];
+  // User-entered deal notes
+  notes?: LeadNote[];
+}
+
+export interface LeadNote {
+  id: string;
+  text: string;
+  createdAt: string;
+  user?: string;
 }
 
 export interface LeadJob {
