@@ -37,6 +37,7 @@ const US_STATES = [
 ];
 
 const LEAD_COUNTS = [
+  { label: '5 leads', value: 5 },
   { label: '10 leads', value: 10 },
   { label: '25 leads', value: 25 },
   { label: '50 leads', value: 50 },
