@@ -1,4 +1,4 @@
-const API_BASE = "https://aimarvels.app.n8n.cloud/webhook/microtix";
+const API_BASE = "https://n8n.srv998244.hstgr.cloud/webhook/lead-search";
 import { auth } from '../config/firebase';
 
 const getIdToken = async () => {
