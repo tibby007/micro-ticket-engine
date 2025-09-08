@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Settings, LogOut, Shield, AlertCircle } from 'lucide-react';
+import { Plus, LogOut, Shield, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -9,7 +9,7 @@ import { LeadsPipeline } from '../components/LeadsPipeline';
 import type { Lead } from '../types';
 import { PricingTable } from '../components/PricingTable';
 import { TrialBanner } from '../components/TrialBanner';
-import { api } from '../services/api';
+// import { api } from '../services/api';
   
 export function DashboardPage() {
   const { user, subscription, loading, logout, refreshSubscription } = useAuth();
@@ -41,15 +41,7 @@ export function DashboardPage() {
     refreshSubscription();
   };
 
-  const handleBillingPortal = async () => {
-    try {
-      const { url } = await api.getPortal();
-      window.open(url, '_blank');
-    } catch (error) {
-      console.error('Failed to open billing portal:', error);
-      alert('Failed to open billing portal. Please try again.');
-    }
-  };
+  // Billing temporarily disabled while core lead gen is finalized
 
   if (loading) {
     return <LoadingSpinner />;
@@ -151,15 +143,6 @@ export function DashboardPage() {
                   <span>Admin</span>
                 </Link>
               )}
-              
-              <button
-                onClick={handleBillingPortal}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <Settings className="w-5 h-5" />
-                <span>Billing</span>
-              </button>
-
               <button
                 onClick={logout}
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
