@@ -86,73 +86,58 @@ export const api = {
     if (!response.ok) {
       throw new Error(`Failed to generate leads: ${response.status} ${response.statusText}`);
     }
-    // Returns array. Some workflows return AI analysis objects; normalize to Lead-like objects
+    // Returns array. Normalize to Lead-like objects regardless of shape
     const raw = await response.json();
 
     const toArray = (val: any) => (Array.isArray(val) ? val : val ? [val] : []);
 
     const [city, state] = (payload.location || '').split(',').map((s: string) => s.trim());
 
-    // Util: does object already look like a lead?
-    const looksLikeLead = (o: any) => o && (('name' in o) || ('address' in o) || ('city' in o) || ('category' in o));
-
-    // Mapper for AI-analysis objects (array items)
-    const mapAiItem = (item: any, idx: number) => {
-      const content = item?.message?.content || item?.equipmentRecommendation || '';
-      const recs = parseEquipment(content, data.industry);
-      const primaryEmail = String(item?.primaryEmail || '').toLowerCase();
-      const email = primaryEmail && !/not\s*found|n\/a|null|^"?=not/i.test(primaryEmail) ? primaryEmail.replace(/^"?=+/, '').replace(/"$/,'') : null;
+    const norm = (item: any, idx: number) => {
       const now = new Date().toISOString();
+      const primaryEmail = String(item?.primaryEmail || item?.email || '').toLowerCase();
+      const email = primaryEmail && !/not\s*found|n\/a|null|^"?=not/i.test(primaryEmail)
+        ? primaryEmail.replace(/^"?=+/, '').replace(/"$/, '')
+        : null;
+      const recText = String(item?.equipmentRecommendation || item?.message?.content || '');
+      const recs = parseEquipment(recText, data.industry);
+      const name = item?.name || item?.businessName || item?.company || `${data.industry || 'Business'} Prospect #${idx + 1}`;
+      const phone = item?.phone || item?.phoneNumber || null;
+      const website = item?.website || item?.url || item?.domain || null;
+      const rating = item?.rating != null ? String(item.rating) : null;
+      const addr = item?.address || item?.fullAddress || '';
+      const cat = item?.category || data.industry || 'Unknown';
+      const itemCity = item?.city || city || '';
+      const itemState = item?.state || state || '';
       return {
-        id: `${Date.now()}-${idx}`,
-        name: `${data.industry || 'Business'} Prospect #${idx + 1}`,
-        phone: null,
+        id: item?.id || `${Date.now()}-${idx}`,
+        name,
+        phone,
         email,
-        website: null,
-        rating: null,
-        city: city || '',
-        state: state || '',
-        address: '',
-        category: data.industry || 'Unknown',
+        website,
+        rating,
+        city: itemCity,
+        state: itemState,
+        address: addr,
+        category: cat,
         stage: 'New',
-        createdAt: now,
-        source: 'outscraper',
+        createdAt: item?.createdAt || now,
+        source: (item?.source as string) || 'outscraper',
         equipmentRecommendations: toArray(recs),
       };
     };
 
-    // If backend returned an array
+    // If backend returned an array, normalize each item
     if (Array.isArray(raw)) {
-      if (raw.some(looksLikeLead)) return raw;
-      return raw.map(mapAiItem);
+      return raw.map(norm);
     }
 
-    // Backend returned a single object; map to a single lead and wrap into array
-    const obj: any = raw || {};
-    const now = new Date().toISOString();
-    // Handle simple shape: { businessName, address, equipmentRecommendation }
-    if ('businessName' in obj || 'address' in obj || 'equipmentRecommendation' in obj) {
-      const recs = parseEquipment(String(obj.equipmentRecommendation || ''), data.industry);
-      return [{
-        id: `${Date.now()}-0`,
-        name: obj.businessName || `${data.industry || 'Business'} Prospect`,
-        phone: null,
-        email: null,
-        website: null,
-        rating: null,
-        city: city || '',
-        state: state || '',
-        address: obj.address || '',
-        category: obj.category || data.industry || 'Unknown',
-        stage: 'New',
-        createdAt: now,
-        source: 'outscraper',
-        equipmentRecommendations: toArray(recs),
-      }];
-    }
+    // Nested structures: {leads:[...]}, {data:[...]}
+    if (Array.isArray(raw?.leads)) return raw.leads.map(norm);
+    if (Array.isArray(raw?.data)) return raw.data.map(norm);
 
-    // Fallback: treat as AI-analysis single object
-    return [mapAiItem(obj, 0)];
+    // Single object — normalize and wrap
+    return [norm(raw, 0)];
   },
 
   // Get user subscription info

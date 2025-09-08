@@ -115,9 +115,15 @@ export function SearchWizard({ subscription, isAdmin: isAdminProp, onLeadsReady,
         radius: formData.radius || 25,
         keywords: formData.keywords?.join(', ') || ''
       });
-      // Accept either a single lead object or an array
-      const leads = Array.isArray(response) ? (response as Lead[]) : ([response] as Lead[]);
-      onLeadsReady(leads);
+      // Accept arrays or single objects, also nested under leads/data
+      const arr = Array.isArray(response)
+        ? response
+        : Array.isArray((response as any)?.leads)
+          ? (response as any).leads
+          : Array.isArray((response as any)?.data)
+            ? (response as any).data
+            : [response];
+      onLeadsReady(arr as Lead[]);
       onClose();
     } catch (error) {
       console.error('Failed to start search:', error);
