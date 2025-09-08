@@ -41,6 +41,8 @@ export interface Lead {
   placeId?: string;
   reviewsCount?: number;
   workingHours?: string;
+  // New workflow may include recommendations for equipment
+  equipmentRecommendations?: string[];
 }
 
 export interface LeadJob {

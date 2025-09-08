@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Building2, MapPin, DollarSign, Zap, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
-import type { SearchRequest, Subscription } from '../types';
+import type { SearchRequest, Subscription, Lead } from '../types';
 
 interface SearchWizardProps {
   subscription: Subscription;
   isAdmin?: boolean;
-  onJobCreated: (jobId: string) => void;
+  onLeadsReady: (leads: Lead[]) => void;
   onClose: () => void;
 }
 
@@ -51,7 +51,7 @@ const RADIUS_OPTIONS = [
   { label: '100 miles', value: 100 }
 ];
 
-export function SearchWizard({ subscription, isAdmin: isAdminProp, onJobCreated, onClose }: SearchWizardProps) {
+export function SearchWizard({ subscription, isAdmin: isAdminProp, onLeadsReady, onClose }: SearchWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -115,45 +115,18 @@ export function SearchWizard({ subscription, isAdmin: isAdminProp, onJobCreated,
         radius: formData.radius || 25,
         keywords: formData.keywords?.join(', ') || ''
       });
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      
-      // Be resilient to different shapes returned by backend
-      const jobId = (
-        response?.jobId ??
-        response?.id ??
-        response?.job?.id ??
-        response?.data?.jobId ??
-        response?.job_id
-      );
-
-      // Helpful diagnostics in console to verify backend payload
-      // Note: safe to leave for now; remove if too noisy later
-      // eslint-disable-next-line no-console
-      console.log('Start response payload:', response, 'extracted jobId:', jobId);
-
-      if (!jobId || typeof jobId !== 'string') {
-        console.error('Unexpected start response shape:', response);
-        throw new Error('Server did not return a job id. Please try again.');
+      // New workflow returns an array of leads immediately
+      if (!Array.isArray(response)) {
+        console.error('Unexpected response (expected array of leads):', response);
+        throw new Error('Invalid response from lead generator.');
       }
 
-      // Guard against accidental demo IDs from backend
-      if (/^demo/i.test(jobId)) {
-        throw new Error('Backend returned a demo job id. Please fix the n8n start response to return a real jobId.');
-      }
-
-      onJobCreated(jobId);
+      onLeadsReady(response as Lead[]);
       onClose();
     } catch (error) {
       console.error('Failed to start search:', error);
       const message = error instanceof Error ? error.message : 'Failed to start search. Please try again.';
-      if (isAdmin && /limit|upgrade|active jobs|subscription/i.test(message)) {
-        setError('Encountered a transient limit check. As admin, please retry.');
-      } else {
-        setError(message);
-      }
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }

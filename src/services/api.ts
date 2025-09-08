@@ -1,4 +1,5 @@
-const API_BASE = "https://n8n.srv998244.hstgr.cloud/webhook/lead-search";
+const LEADS_API_BASE = import.meta.env.VITE_LEADS_API || "https://n8n.srv998244.hstgr.cloud/webhook/lead-search";
+const APP_API_BASE = import.meta.env.VITE_APP_API || "https://n8n.srv998244.hstgr.cloud/webhook/microtix";
 import { auth } from '../config/firebase';
 
 const getIdToken = async () => {
@@ -10,35 +11,35 @@ const getIdToken = async () => {
 export const api = {
   // Start lead generation
   async startLeadGeneration(data: any) {
-    const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=start`, {
+    // New workflow: single endpoint, ignores auth, returns leads immediately
+    const location = [data.city, data.state].filter(Boolean).join(', ');
+    const payload = {
+      industry: data.industry,
+      location,
+      radius: data.radius,
+      leadCount: data.leadCount,
+      // Pass through keywords if provided (backend may ignore)
+      keywords: data.keywords || ''
+    };
+    const response = await fetch(`${LEADS_API_BASE}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to start lead generation: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to generate leads: ${response.status} ${response.statusText}`);
     }
-    // Guard against empty body or non-JSON responses
-    const text = await response.text();
-    if (!text || !text.trim()) {
-      throw new Error('Empty response from /start');
-    }
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      throw new Error('Invalid JSON from /start');
-    }
+    // Returns array of leads immediately
+    return response.json();
   },
 
   // Get user subscription info
   async getMe() {
     const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=me`, {
+    const response = await fetch(`${APP_API_BASE}?path=me`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -60,65 +61,14 @@ export const api = {
     }
   },
 
-  // Check job status
-  async getJobStatus(jobId: string) {
-    const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=status&jobId=${jobId}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch job status: ${response.statusText}`);
-    }
-    
-    return response.json();
-  },
+  // Job status/results removed in direct-generation mode
 
-  // Get job results
-  async getJobResults(jobId: string) {
-    const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=results&jobId=${jobId}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch job results: ${response.statusText}`);
-    }
-    
-    return response.json();
-  },
-
-  // Update lead stage
-  async updateLeadStage(data: any) {
-    const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=update`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to update lead stage: ${response.statusText}`);
-    }
-    
-    return response.json();
-  },
+  // Update lead stage not supported in new workflow; keep client-side only
 
   // Create Stripe checkout session
   async createCheckout(data: any) {
     const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=checkout`, {
+    const response = await fetch(`${APP_API_BASE}?path=checkout`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -137,7 +87,7 @@ export const api = {
   // Get billing portal
   async getPortal() {
     const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=portal`, {
+    const response = await fetch(`${APP_API_BASE}?path=portal`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -155,7 +105,7 @@ export const api = {
   // Get admin stats
   async getAdminStats() {
     const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=admin`, {
+    const response = await fetch(`${APP_API_BASE}?path=admin`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -173,7 +123,7 @@ export const api = {
   // Retry failed job
   async retryJob(jobId: string) {
     const token = await getIdToken();
-    const response = await fetch(`${API_BASE}?path=retry&jobId=${jobId}`, {
+    const response = await fetch(`${APP_API_BASE}?path=retry&jobId=${jobId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

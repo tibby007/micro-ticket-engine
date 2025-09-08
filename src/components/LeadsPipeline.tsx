@@ -1,104 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Mail, Phone, Globe, MapPin, CheckCircle, Search, Building, Users, Target, Star } from 'lucide-react';
-import { api } from '../services/api';
-import type { Lead, LeadJob } from '../types';
+import type { Lead } from '../types';
 
 interface LeadsPipelineProps {
-  activeJobs: string[];
-  onJobUpdate: (jobs: string[]) => void;
+  leads: Lead[];
 }
 
-export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
-  const [jobs, setJobs] = useState<{ [jobId: string]: LeadJob }>({});
-  const [leads, setLeads] = useState<{ [jobId: string]: Lead[] }>({});
+export function LeadsPipeline({ leads }: LeadsPipelineProps) {
+  const [items, setItems] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const pollForJobData = async () => {
-      const updatedJobs: string[] = [];
-      
-      for (const jobId of activeJobs) {
-        if (!jobId) continue;
-        try {
-          const jobStatus = await api.getJobStatus(jobId);
-          
-          setJobs(prev => ({ ...prev, [jobId]: jobStatus }));
-          
-          // Update progress if available
-          if (jobStatus.processed && jobStatus.total) {
-            setProgress(Math.round((jobStatus.processed / jobStatus.total) * 100));
-          }
-          
-          if (jobStatus.status === 'completed') {
-            // Get results when job is completed
-            const jobResults = await api.getJobResults(jobId);
-            setLeads(prev => ({ ...prev, [jobId]: jobResults.leads || [] }));
-          } else if (jobStatus.status === 'failed') {
-            console.error(`Job ${jobId} failed:`, jobStatus.message);
-          } else if (jobStatus.status === 'failed') {
-            console.error(`Job ${jobId} failed:`, jobStatus.message);
-          } else {
-            // Treat any other status (e.g., queued, created) as in-progress to avoid prematurely clearing UI
-            updatedJobs.push(jobId);
-            setIsGenerating(true);
-          }
-        } catch (error) {
-          console.error(`Failed to fetch data for job ${jobId}:`, error);
-        }
-      }
-      
-      if (updatedJobs.length === 0) {
-        setIsGenerating(false);
-        setProgress(0);
-      }
-      
-      // Update active jobs list if it changed
-      if (updatedJobs.length !== activeJobs.length) {
-        onJobUpdate(updatedJobs);
-      }
-    };
+    // Normalize incoming leads: ensure id and stage
+    const normalized = (leads || []).map((lead, idx) => ({
+      ...lead,
+      stage: 'stage' in lead && lead.stage ? lead.stage : 'New',
+      id: lead.id || `${lead.name || 'lead'}-${lead.city || ''}-${lead.state || ''}-${idx}-${Date.now()}`,
+      createdAt: lead.createdAt || new Date().toISOString(),
+      source: (lead as any).source || 'outscraper',
+    } as Lead));
+    setItems(normalized);
+  }, [leads]);
 
-    if (activeJobs.length > 0) {
-      pollForJobData();
-      const interval = setInterval(pollForJobData, 2000); // Poll every 2 seconds
-      return () => clearInterval(interval);
-    }
-  }, [activeJobs, onJobUpdate]);
-
-  const handleStageChange = async (leadId: string, newStage: Lead['stage']) => {
-    try {
-      const foundJobId = Object.keys(leads).find(jobId => 
-        leads[jobId].some(lead => lead.id === leadId)
-      );
-      
-      if (!foundJobId) return;
-      
-      await api.updateLeadStage({
-        jobId: foundJobId,
-        leadId: leadId,
-        stage: newStage
-      });
-      
-      setLeads(prev => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach(jobId => {
-          updated[jobId] = updated[jobId].map(lead =>
-            lead.id === leadId ? { ...lead, stage: newStage } : lead
-          );
-        });
-        return updated;
-      });
-    } catch (error) {
-      console.error('Failed to update lead stage:', error);
-      alert('Failed to update lead stage. Please try again.');
+  const handleStageChange = (leadId: string, newStage: Lead['stage']) => {
+    setItems(prev => prev.map(l => l.id === leadId ? { ...l, stage: newStage } : l));
+    if (selectedLead?.id === leadId) {
+      setSelectedLead({ ...selectedLead, stage: newStage });
     }
   };
 
-  const getLeadsByStage = (stage: Lead['stage']): Lead[] => {
-    return Object.values(leads).flat().filter(lead => lead.stage === stage);
-  };
+  const getLeadsByStage = (stage: Lead['stage']): Lead[] => items.filter(lead => lead.stage === stage);
 
   const getStageColor = (stage: Lead['stage']) => {
     switch (stage) {
@@ -118,45 +49,8 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
     { id: 'won', title: 'Won', stage: 'Won' as const, icon: Building },
   ];
 
-  const totalLeads = Object.values(leads).flat().length;
-  const completedJobs = Object.values(jobs).filter(job => job.status === 'completed').length;
-
-  // Show generation progress if active
-  if (isGenerating && totalLeads === 0) {
-    return (
-      <div className="text-center py-16">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-2xl mb-6 animate-pulse">
-          <Search className="w-10 h-10 text-blue-600" />
-        </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-4">
-          Generating Real Leads...
-        </h3>
-        <p className="text-gray-600 text-lg mb-8 max-w-md mx-auto">
-          Our AI is searching Google Maps and gathering real business data from Outscraper.
-        </p>
-        
-        {progress > 0 && (
-          <div className="max-w-md mx-auto mb-6">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progress</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        )}
-        
-        <div className="text-sm text-gray-500">
-          This usually takes 30-60 seconds for real business data
-        </div>
-      </div>
-    );
-  }
-  if (activeJobs.length === 0 && totalLeads === 0) {
+  const totalLeads = items.length;
+  if (totalLeads === 0) {
     return (
       <div className="text-center py-16">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-2xl mb-6">
@@ -206,26 +100,6 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
         <div className="bg-white rounded-xl shadow-sm p-6 border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Jobs</p>
-              <p className="text-2xl font-bold text-gray-900">{activeJobs.length}</p>
-            </div>
-            <Search className="w-8 h-8 text-yellow-600" />
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm p-6 border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-2xl font-bold text-gray-900">{completedJobs}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm p-6 border">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-sm font-medium text-gray-600">Won</p>
               <p className="text-2xl font-bold text-gray-900">{getLeadsByStage('Won').length}</p>
             </div>
@@ -233,65 +107,6 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
           </div>
         </div>
       </div>
-
-      {/* Active Jobs Status */}
-      {Object.values(jobs).length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-gray-900">Active Searches</h3>
-          {Object.values(jobs).map((job) => (
-            <div key={job.id} className="bg-white rounded-xl shadow-sm p-6 border">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 text-lg">
-                    {job.searchParams.industry} in {job.searchParams.city}, {job.searchParams.state}
-                  </h4>
-                  <p className="text-gray-600">
-                    {job.searchParams.leadCount || 50} leads • {job.searchParams.radius || 25} mile radius
-                    {job.searchParams.keywords && job.searchParams.keywords.length > 0 && (
-                      <span> • Keywords: {job.searchParams.keywords.join(', ')}</span>
-                    )}
-                  </p>
-                </div>
-                <span className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  job.status === 'completed' ? 'bg-green-100 text-green-800' :
-                  job.status === 'failed' ? 'bg-red-100 text-red-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {job.status === 'processing' || job.status === 'searching' ? 'Generating Real Leads...' : job.status}
-                </span>
-              </div>
-              
-              {(job.status === 'processing' || job.status === 'searching') && (
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>{job.message || 'Scraping Google Maps via Outscraper...'}</span>
-                    <span>{job.processed} / {job.total || '?'}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(job.progress, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {job.status === 'failed' && job.error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-700 text-sm">{job.error}</p>
-                </div>
-              )}
-              
-              <div className="text-sm text-gray-500">
-                Started: {new Date(job.createdAt).toLocaleString()}
-                {job.completedAt && (
-                  <> • Completed: {new Date(job.completedAt).toLocaleString()}</>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Kanban Board */}
       {totalLeads > 0 && (
@@ -482,6 +297,17 @@ export function LeadsPipeline({ activeJobs, onJobUpdate }: LeadsPipelineProps) {
                     <span className="text-sm text-gray-600">Source:</span>
                     <div className="font-medium capitalize">{selectedLead.source}</div>
                   </div>
+                  
+                  {Array.isArray(selectedLead.equipmentRecommendations) && selectedLead.equipmentRecommendations.length > 0 && (
+                    <div>
+                      <span className="text-sm text-gray-600">Equipment Recommendations:</span>
+                      <ul className="list-disc list-inside text-sm text-gray-800 mt-1">
+                        {selectedLead.equipmentRecommendations.map((rec, i) => (
+                          <li key={i}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   
                   {selectedLead.workingHours && (
                     <div>

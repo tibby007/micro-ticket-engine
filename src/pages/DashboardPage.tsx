@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { AuthPage } from './AuthPage';
 import { SearchWizard } from '../components/SearchWizard';
 import { LeadsPipeline } from '../components/LeadsPipeline';
+import type { Lead } from '../types';
 import { PricingTable } from '../components/PricingTable';
 import { TrialBanner } from '../components/TrialBanner';
 import { api } from '../services/api';
@@ -14,7 +15,7 @@ export function DashboardPage() {
   const { user, subscription, loading, logout, refreshSubscription } = useAuth();
   const [showWizard, setShowWizard] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
-  const [activeJobs, setActiveJobs] = useState<string[]>([]);
+  const [sessionLeads, setSessionLeads] = useState<Lead[]>([]);
   const [checkoutMessage, setCheckoutMessage] = useState('');
 
   // Handle checkout success/cancel messages
@@ -34,43 +35,10 @@ export function DashboardPage() {
     }
   }, [refreshSubscription]);
 
-  useEffect(() => {
-    const savedJobs = localStorage.getItem('microtix_active_jobs');
-    if (savedJobs) {
-      try {
-        const parsed = JSON.parse(savedJobs);
-        const sanitized = Array.isArray(parsed)
-          ? parsed.filter((id) => typeof id === 'string' && id.length >= 6 && /^[A-Za-z0-9_-]+$/.test(id) && !id.startsWith('demo'))
-          : [];
-        setActiveJobs(sanitized);
-        if (sanitized.length !== (Array.isArray(parsed) ? parsed.length : 0)) {
-          localStorage.setItem('microtix_active_jobs', JSON.stringify(sanitized));
-        }
-      } catch (error) {
-        console.error('Failed to parse saved jobs:', error);
-        localStorage.removeItem('microtix_active_jobs');
-      }
-    }
-  }, []);
-
-  const handleJobCreated = (jobId: string) => {
-    if (!jobId || typeof jobId !== 'string') {
-      console.error('Refusing to add invalid jobId to activeJobs:', jobId);
-      return;
-    }
-    if (/^demo/i.test(jobId)) {
-      console.error('Refusing to add demo jobId to activeJobs:', jobId);
-      return;
-    }
-    const updatedJobs = [...activeJobs, jobId];
-    setActiveJobs(updatedJobs);
-    localStorage.setItem('microtix_active_jobs', JSON.stringify(updatedJobs));
-    refreshSubscription(); // Refresh to update usage stats
-  };
-
-  const handleJobUpdate = (jobs: string[]) => {
-    setActiveJobs(jobs);
-    localStorage.setItem('microtix_active_jobs', JSON.stringify(jobs));
+  // Direct generation: capture leads returned by the workflow
+  const handleLeadsReady = (leads: Lead[]) => {
+    setSessionLeads(Array.isArray(leads) ? leads : []);
+    refreshSubscription();
   };
 
   const handleBillingPortal = async () => {
@@ -109,7 +77,8 @@ export function DashboardPage() {
     );
   }
 
-  const canStartNewSearch = (subscription?.usage?.activeJobs ?? 0) < (subscription?.limits?.activeJobs ?? 0) && subscription?.active;
+  // Without async jobs, allow starting searches if subscription is active
+  const canStartNewSearch = !!subscription?.active;
   const isTrialExpired = subscription?.trialEndsAt && new Date(subscription.trialEndsAt) <= new Date();
   
   // Admin users bypass subscription restrictions. Prefer backend flag, fallback to email allowlist.
@@ -168,7 +137,7 @@ export function DashboardPage() {
 
             <div className="flex items-center space-x-6">
               <div className="text-sm text-gray-600">
-                <span className="font-medium">{subscription?.usage?.activeJobs ?? 0}</span> / {isAdmin ? '∞' : (subscription?.limits?.activeJobs ?? 0)} active jobs
+                <span className="font-medium">{sessionLeads.length}</span> session leads
                 <br />
                 <span className="font-medium">{subscription?.usage?.leadsThisMonth ?? 0}</span> leads this month
               </div>
@@ -257,7 +226,7 @@ export function DashboardPage() {
             <p className="text-yellow-800">
               {subscription && !subscription.active 
                 ? 'Your subscription is inactive. Please upgrade to start new searches.'
-                : `You've reached your limit of ${subscription?.limits?.activeJobs ?? 0} active jobs.`
+                : 'You cannot start a new search right now.'
               }
               {subscription?.active && (
                 <>
@@ -266,7 +235,7 @@ export function DashboardPage() {
                     className="ml-2 text-yellow-900 underline hover:no-underline"
                   >
                     Refresh status
-                  </button> or upgrade your plan to run more searches simultaneously.
+                  </button>
                 </>
               )}
             </p>
@@ -295,7 +264,7 @@ export function DashboardPage() {
               <SearchWizard
                 subscription={subscription}
                 isAdmin={isAdmin}
-                onJobCreated={handleJobCreated}
+                onLeadsReady={handleLeadsReady}
                 onClose={() => setShowWizard(false)}
               />
             </div>
@@ -303,10 +272,7 @@ export function DashboardPage() {
         )}
 
         {/* Pipeline */}
-        <LeadsPipeline 
-          activeJobs={activeJobs} 
-          onJobUpdate={handleJobUpdate}
-        />
+        <LeadsPipeline leads={sessionLeads} />
       </div>
     </div>
   );
