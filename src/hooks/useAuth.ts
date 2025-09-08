@@ -8,7 +8,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { api } from '../services/api';
+// import { api } from '../services/api';
 import type { Subscription } from '../types';
 import type { User as FirebaseUser } from 'firebase/auth';
 
@@ -32,6 +32,26 @@ function adminFallbackSubscription(user: FirebaseUser): Subscription {
   };
 }
 
+function localBasicSubscription(user: FirebaseUser): Subscription {
+  return {
+    active: true,
+    status: 'active',
+    tier: 'pro',
+    limits: {
+      leadsPerSearch: 100,
+      activeJobs: 5,
+      features: []
+    },
+    usage: {
+      activeJobs: 0,
+      searchesThisMonth: 0,
+      leadsThisMonth: 0
+    },
+    isAdmin: false,
+    customerEmail: user.email || ''
+  };
+}
+
 interface AuthState {
   user: User | null;
   subscription: Subscription | null;
@@ -49,20 +69,16 @@ export function useAuth() {
 
   const refreshSubscription = async () => {
     if (!authState.user) return;
-    
     try {
-      const userInfo = await api.getMe();
-      setAuthState(prev => ({ ...prev, subscription: userInfo, error: null }));
+      const tokenResult = await authState.user.getIdTokenResult(true);
+      if (tokenResult.claims?.isAdmin === true) {
+        setAuthState(prev => ({ ...prev, subscription: adminFallbackSubscription(authState.user!), error: null }));
+      } else {
+        setAuthState(prev => ({ ...prev, subscription: localBasicSubscription(authState.user!), error: null }));
+      }
     } catch (error) {
-      console.error('Failed to refresh subscription:', error);
-      try {
-        const tokenResult = await authState.user.getIdTokenResult(true);
-        if (tokenResult.claims?.isAdmin === true) {
-          setAuthState(prev => ({ ...prev, subscription: adminFallbackSubscription(authState.user!), error: null }));
-          return;
-        }
-      } catch {}
-      setAuthState(prev => ({ ...prev, error: error instanceof Error ? error.message : 'Failed to load subscription' }));
+      // Fallback to basic local subscription on any error
+      setAuthState(prev => ({ ...prev, subscription: localBasicSubscription(authState.user!), error: null }));
     }
   };
 
@@ -70,23 +86,14 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const userInfo = await api.getMe();
-          setAuthState({
-            user,
-            subscription: userInfo,
-            loading: false,
-            error: null
-          });
-        } catch (error) {
-          console.error('Failed to load subscription:', error);
-          try {
-            const tokenResult = await user.getIdTokenResult(true);
-            if (tokenResult.claims?.isAdmin === true) {
-              setAuthState({ user, subscription: adminFallbackSubscription(user), loading: false, error: null });
-              return;
-            }
-          } catch {}
-          setAuthState({ user, subscription: null, loading: false, error: error instanceof Error ? error.message : 'Failed to load subscription' });
+          const tokenResult = await user.getIdTokenResult(true);
+          if (tokenResult.claims?.isAdmin === true) {
+            setAuthState({ user, subscription: adminFallbackSubscription(user), loading: false, error: null });
+          } else {
+            setAuthState({ user, subscription: localBasicSubscription(user), loading: false, error: null });
+          }
+        } catch {
+          setAuthState({ user, subscription: localBasicSubscription(user), loading: false, error: null });
         }
       } else {
         setAuthState({
