@@ -34,7 +34,6 @@ export const api = {
     }
     // Returns array. Some workflows return AI analysis objects; normalize to Lead-like objects
     const raw = await response.json();
-    if (!Array.isArray(raw)) return raw;
 
     const toArray = (val: any) => (Array.isArray(val) ? val : val ? [val] : []);
     const parseEquipment = (text: string): string[] => {
@@ -60,14 +59,11 @@ export const api = {
 
     const [city, state] = (payload.location || '').split(',').map((s: string) => s.trim());
 
-    // If objects already look like leads, return as-is
-    const looksLikeLead = (o: any) => 'name' in o || 'address' in o || 'city' in o || 'category' in o;
-    if (raw.some(looksLikeLead)) {
-      return raw;
-    }
+    // Util: does object already look like a lead?
+    const looksLikeLead = (o: any) => o && (('name' in o) || ('address' in o) || ('city' in o) || ('category' in o));
 
-    // Map AI analysis objects to minimal Lead objects expected by the UI
-    const mapped = raw.map((item: any, idx: number) => {
+    // Mapper for AI-analysis objects (array items)
+    const mapAiItem = (item: any, idx: number) => {
       const content = item?.message?.content || item?.equipmentRecommendation || '';
       const recs = parseEquipment(content);
       const primaryEmail = String(item?.primaryEmail || '').toLowerCase();
@@ -89,9 +85,40 @@ export const api = {
         source: 'outscraper',
         equipmentRecommendations: toArray(recs),
       };
-    });
+    };
 
-    return mapped;
+    // If backend returned an array
+    if (Array.isArray(raw)) {
+      if (raw.some(looksLikeLead)) return raw;
+      return raw.map(mapAiItem);
+    }
+
+    // Backend returned a single object; map to a single lead and wrap into array
+    const obj: any = raw || {};
+    const now = new Date().toISOString();
+    // Handle simple shape: { businessName, address, equipmentRecommendation }
+    if ('businessName' in obj || 'address' in obj || 'equipmentRecommendation' in obj) {
+      const recs = parseEquipment(String(obj.equipmentRecommendation || ''));
+      return [{
+        id: `${Date.now()}-0`,
+        name: obj.businessName || `${data.industry || 'Business'} Prospect`,
+        phone: null,
+        email: null,
+        website: null,
+        rating: null,
+        city: city || '',
+        state: state || '',
+        address: obj.address || '',
+        category: obj.category || data.industry || 'Unknown',
+        stage: 'New',
+        createdAt: now,
+        source: 'outscraper',
+        equipmentRecommendations: toArray(recs),
+      }];
+    }
+
+    // Fallback: treat as AI-analysis single object
+    return [mapAiItem(obj, 0)];
   },
 
   // Get user subscription info

@@ -115,13 +115,9 @@ export function SearchWizard({ subscription, isAdmin: isAdminProp, onLeadsReady,
         radius: formData.radius || 25,
         keywords: formData.keywords?.join(', ') || ''
       });
-      // New workflow returns an array of leads immediately
-      if (!Array.isArray(response)) {
-        console.error('Unexpected response (expected array of leads):', response);
-        throw new Error('Invalid response from lead generator.');
-      }
-
-      onLeadsReady(response as Lead[]);
+      // Accept either a single lead object or an array
+      const leads = Array.isArray(response) ? (response as Lead[]) : ([response] as Lead[]);
+      onLeadsReady(leads);
       onClose();
     } catch (error) {
       console.error('Failed to start search:', error);
