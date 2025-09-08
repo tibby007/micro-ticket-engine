@@ -8,6 +8,60 @@ const getIdToken = async () => {
   return await user.getIdToken();
 };
 
+// Helper: normalize a free-form equipment text into a list of concise items
+const parseEquipment = (text: string, industry?: string): string[] => {
+  if (!text || typeof text !== 'string') return [];
+  // Strip leading formula markers like '=' and markdown
+  const cleaned = text.replace(/^=+/, '').replace(/^\s*Based on[\s\S]*?:/i, '').trim();
+
+  // Split on common separators: newlines, bullets, hyphens, commas, middots
+  const rawParts = cleaned
+    .split(/\r?\n|\u2022|\u2023|\-|\u2013|\u2014|•|,/) // hyphen variants and bullets
+    .map(s => s.replace(/^\s*\d+\.?\s*/, '')) // drop leading numbering
+    .map(s => s.replace(/\*\*/g, '')) // drop markdown bold markers
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  // Keep short, equipment-like tokens (1-4 words)
+  let items = Array.from(new Set(rawParts))
+    .map(s => s.replace(/\s{2,}/g, ' '))
+    .filter(s => s.length >= 3 && s.split(/\s+/).length <= 4);
+
+  // Basic negative filter to drop cross-industry heavy machinery unless relevant
+  const NEG = [/cnc/i, /scaffold/i, /printing press/i, /forklift/i];
+  const looksRestaurant = /restaurant|food/i.test(industry || '');
+  if (looksRestaurant) {
+    items = items.filter(i => !NEG.some(rx => rx.test(i)));
+  }
+
+  // Positive allowlist for restaurants to bias toward relevant items
+  if (looksRestaurant) {
+    const ALLOW = [
+      /oven/i, /range/i, /grill/i, /fryer/i, /hood/i, /vent/i, /dishwasher/i, /dish machine/i,
+      /refrigerator/i, /refrigeration/i, /freezer/i, /ice/i, /prep table/i, /worktable/i,
+      /mixer/i, /proof/i, /pos/i, /grease trap/i
+    ];
+    const preferred = items.filter(i => ALLOW.some(rx => rx.test(i)));
+    if (preferred.length >= 4) items = preferred; // bias if we have enough
+  }
+
+  // Cap to 6
+  items = items.slice(0, 6);
+
+  // Fallback if empty
+  if (items.length === 0 && looksRestaurant) {
+    items = [
+      'Commercial oven',
+      'Range',
+      'Deep fryer',
+      'Vent hood',
+      'Refrigeration unit',
+      'POS system'
+    ];
+  }
+  return items;
+};
+
 export const api = {
   // Start lead generation
   async startLeadGeneration(data: any) {
@@ -36,26 +90,6 @@ export const api = {
     const raw = await response.json();
 
     const toArray = (val: any) => (Array.isArray(val) ? val : val ? [val] : []);
-    const parseEquipment = (text: string): string[] => {
-      if (!text || typeof text !== 'string') return [];
-      // Remove any leading markers like '=...'
-      const cleaned = text.replace(/^=+/, '');
-      const lines = cleaned.split(/\r?\n/);
-      const items: string[] = [];
-      for (const line of lines) {
-        const m = line.match(/^\s*\d+\.[\s*]*([^:]+?)(:|\n|$)/i);
-        if (m && m[1]) {
-          const name = m[1].replace(/\*\*/g, '').trim();
-          if (name) items.push(name);
-        }
-      }
-      // Fallback: if nothing matched, return the whole paragraph as a single recommendation
-      if (items.length === 0) {
-        const firstPara = cleaned.split(/\n\n/)[0]?.trim();
-        if (firstPara) items.push(firstPara.slice(0, 160));
-      }
-      return items;
-    };
 
     const [city, state] = (payload.location || '').split(',').map((s: string) => s.trim());
 
@@ -65,7 +99,7 @@ export const api = {
     // Mapper for AI-analysis objects (array items)
     const mapAiItem = (item: any, idx: number) => {
       const content = item?.message?.content || item?.equipmentRecommendation || '';
-      const recs = parseEquipment(content);
+      const recs = parseEquipment(content, data.industry);
       const primaryEmail = String(item?.primaryEmail || '').toLowerCase();
       const email = primaryEmail && !/not\s*found|n\/a|null|^"?=not/i.test(primaryEmail) ? primaryEmail.replace(/^"?=+/, '').replace(/"$/,'') : null;
       const now = new Date().toISOString();
@@ -98,7 +132,7 @@ export const api = {
     const now = new Date().toISOString();
     // Handle simple shape: { businessName, address, equipmentRecommendation }
     if ('businessName' in obj || 'address' in obj || 'equipmentRecommendation' in obj) {
-      const recs = parseEquipment(String(obj.equipmentRecommendation || ''));
+      const recs = parseEquipment(String(obj.equipmentRecommendation || ''), data.industry);
       return [{
         id: `${Date.now()}-0`,
         name: obj.businessName || `${data.industry || 'Business'} Prospect`,

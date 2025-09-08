@@ -35,6 +35,24 @@ export function DashboardPage() {
     }
   }, [refreshSubscription]);
 
+  // Rehydrate saved leads on load
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('session_leads');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setSessionLeads(parsed);
+      }
+    } catch {}
+  }, []);
+
+  // Persist leads to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('session_leads', JSON.stringify(sessionLeads));
+    } catch {}
+  }, [sessionLeads]);
+
   // Direct generation: capture leads returned by the workflow
   const handleLeadsReady = (leads: Lead[]) => {
     setSessionLeads(Array.isArray(leads) ? leads : []);
