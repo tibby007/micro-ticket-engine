@@ -95,20 +95,21 @@ export const api = {
 
     const norm = (item: any, idx: number) => {
       const now = new Date().toISOString();
+      // Prefer n8n field names first, then fallbacks
       const primaryEmail = String(item?.primaryEmail || item?.email || '').toLowerCase();
       const email = primaryEmail && !/not\s*found|n\/a|null|^"?=not/i.test(primaryEmail)
         ? primaryEmail.replace(/^"?=+/, '').replace(/"$/, '')
         : null;
       const recText = String(item?.equipmentRecommendation || item?.message?.content || '');
       const recs = parseEquipment(recText, data.industry);
-      const name = item?.name || item?.businessName || item?.company || `${data.industry || 'Business'} Prospect #${idx + 1}`;
-      const phone = item?.phone || item?.phoneNumber || null;
-      const website = item?.website || item?.url || item?.domain || null;
-      const rating = item?.rating != null ? String(item.rating) : null;
-      const addr = item?.address || item?.fullAddress || '';
-      const cat = item?.category || data.industry || 'Unknown';
-      const itemCity = item?.city || city || '';
-      const itemState = item?.state || state || '';
+      const name = item?.businessName || item?.name || item?.company || `${data.industry || 'Business'} Prospect #${idx + 1}`;
+      const phone = item?.primaryPhone || item?.phone || item?.phoneNumber || null;
+      const website = item?.website || item?.websiteUrl || item?.url || item?.domain || null;
+      const rating = item?.rating != null ? String(item.rating) : (item?.ratingValue != null ? String(item.ratingValue) : null);
+      const addr = item?.address || item?.fullAddress || item?.address1 || '';
+      const cat = item?.category || item?.businessCategory || data.industry || 'Unknown';
+      const itemCity = item?.city || item?.cityName || city || '';
+      const itemState = item?.state || item?.stateCode || state || '';
       const baseId = item?.id || item?.leadId || item?.lead_id || item?.businessId || item?.placeId || item?.googleId || `${Date.now()}`;
       return {
         id: `${baseId}-${idx}`,
