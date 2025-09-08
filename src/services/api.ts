@@ -32,8 +32,66 @@ export const api = {
     if (!response.ok) {
       throw new Error(`Failed to generate leads: ${response.status} ${response.statusText}`);
     }
-    // Returns array of leads immediately
-    return response.json();
+    // Returns array. Some workflows return AI analysis objects; normalize to Lead-like objects
+    const raw = await response.json();
+    if (!Array.isArray(raw)) return raw;
+
+    const toArray = (val: any) => (Array.isArray(val) ? val : val ? [val] : []);
+    const parseEquipment = (text: string): string[] => {
+      if (!text || typeof text !== 'string') return [];
+      // Remove any leading markers like '=...'
+      const cleaned = text.replace(/^=+/, '');
+      const lines = cleaned.split(/\r?\n/);
+      const items: string[] = [];
+      for (const line of lines) {
+        const m = line.match(/^\s*\d+\.[\s*]*([^:]+?)(:|\n|$)/i);
+        if (m && m[1]) {
+          const name = m[1].replace(/\*\*/g, '').trim();
+          if (name) items.push(name);
+        }
+      }
+      // Fallback: if nothing matched, return the whole paragraph as a single recommendation
+      if (items.length === 0) {
+        const firstPara = cleaned.split(/\n\n/)[0]?.trim();
+        if (firstPara) items.push(firstPara.slice(0, 160));
+      }
+      return items;
+    };
+
+    const [city, state] = (payload.location || '').split(',').map((s: string) => s.trim());
+
+    // If objects already look like leads, return as-is
+    const looksLikeLead = (o: any) => 'name' in o || 'address' in o || 'city' in o || 'category' in o;
+    if (raw.some(looksLikeLead)) {
+      return raw;
+    }
+
+    // Map AI analysis objects to minimal Lead objects expected by the UI
+    const mapped = raw.map((item: any, idx: number) => {
+      const content = item?.message?.content || item?.equipmentRecommendation || '';
+      const recs = parseEquipment(content);
+      const primaryEmail = String(item?.primaryEmail || '').toLowerCase();
+      const email = primaryEmail && !/not\s*found|n\/a|null|^"?=not/i.test(primaryEmail) ? primaryEmail.replace(/^"?=+/, '').replace(/"$/,'') : null;
+      const now = new Date().toISOString();
+      return {
+        id: `${Date.now()}-${idx}`,
+        name: `${data.industry || 'Business'} Prospect #${idx + 1}`,
+        phone: null,
+        email,
+        website: null,
+        rating: null,
+        city: city || '',
+        state: state || '',
+        address: '',
+        category: data.industry || 'Unknown',
+        stage: 'New',
+        createdAt: now,
+        source: 'outscraper',
+        equipmentRecommendations: toArray(recs),
+      };
+    });
+
+    return mapped;
   },
 
   // Get user subscription info
