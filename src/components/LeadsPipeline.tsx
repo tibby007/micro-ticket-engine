@@ -11,11 +11,12 @@ export function LeadsPipeline({ leads }: LeadsPipelineProps) {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   useEffect(() => {
-    // Normalize incoming leads: ensure id and stage
+    // Normalize incoming leads: ensure unique id and stage
+    const ts = Date.now();
     const normalized = (leads || []).map((lead, idx) => ({
       ...lead,
-      stage: 'stage' in lead && lead.stage ? lead.stage : 'New',
-      id: lead.id || `${lead.name || 'lead'}-${lead.city || ''}-${lead.state || ''}-${idx}-${Date.now()}`,
+      stage: lead.stage || 'New',
+      id: `${lead.id || `${lead.name || 'lead'}-${lead.city || ''}-${lead.state || ''}-${ts}`}-${idx}`,
       createdAt: lead.createdAt || new Date().toISOString(),
       source: (lead as any).source || 'outscraper',
     } as Lead));

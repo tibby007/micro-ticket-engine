@@ -109,8 +109,9 @@ export const api = {
       const cat = item?.category || data.industry || 'Unknown';
       const itemCity = item?.city || city || '';
       const itemState = item?.state || state || '';
+      const baseId = item?.id || item?.leadId || item?.lead_id || item?.businessId || item?.placeId || item?.googleId || `${Date.now()}`;
       return {
-        id: item?.id || `${Date.now()}-${idx}`,
+        id: `${baseId}-${idx}`,
         name,
         phone,
         email,
